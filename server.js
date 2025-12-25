@@ -84,6 +84,7 @@ class Room {
     this.locationsCount = 50; // ADICIONAR ESTA LINHA
     this.availableLocations = []; // ADICIONAR ESTA LINHA
     this.deleteTimeout = null; // ADICIONAR ESTA LINHA
+    this.inactivityTimeout = null; // ADICIONAR ESTA LINHA
   }
 
   addPlayer(playerId, name, socketId) {
@@ -126,6 +127,9 @@ class Room {
   startGame() {
     if (this.players.size < 3) return false;
     
+    // Cancelar timeout de inatividade
+    this.cancelInactivityDelete();
+    
     this.gameState = 'playing';
     this.availableLocations = locations.slice(0, this.locationsCount);
     this.location = this.availableLocations[Math.floor(Math.random() * this.availableLocations.length)];
@@ -140,7 +144,7 @@ class Room {
     this.startTimer();
     
     return true;
-  }
+ }
 
   scheduleDelete() {
     // Cancelar timeout anterior se existir
@@ -167,6 +171,35 @@ class Room {
     }
   }
 
+  scheduleInactivityDelete() {
+    // Agendar deleção em 2 minutos se jogo não for iniciado
+    this.inactivityTimeout = setTimeout(() => {
+      console.log(`Sala ${this.code} deletada por inatividade - não foi iniciada em 2 minutos`);
+      activeRooms.delete(this.code);
+      console.log('Salas ativas restantes:', activeRooms.size);
+      
+      // Notificar jogadores na sala
+      this.players.forEach((player) => {
+        const playerSocket = io.sockets.sockets.get(player.socketId);
+        if (playerSocket) {
+          playerSocket.emit('room-deleted', {
+            message: 'Sala foi fechada por inatividade (2 minutos sem iniciar)'
+          });
+        }
+      });
+    }, 120000); // 2 minutos = 120000ms
+    
+    console.log(`Sala ${this.code} será deletada em 2 minutos se não for iniciada`);
+  }
+  
+  cancelInactivityDelete() {
+    if (this.inactivityTimeout) {
+      clearTimeout(this.inactivityTimeout);
+      this.inactivityTimeout = null;
+      console.log(`Timeout de inatividade da sala ${this.code} cancelado - jogo iniciado`);
+    }
+  }
+  
   startTimer() {
     this.timer = setInterval(() => {
       this.timeRemaining--;
@@ -322,6 +355,7 @@ app.post('/create-room', (req, res) => {
   }
   
   activeRooms.set(roomCode, room);
+  room.scheduleInactivityDelete();
   
   res.json({ 
     roomCode, 
@@ -728,4 +762,5 @@ server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 
 });
+
 
