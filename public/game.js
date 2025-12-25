@@ -231,6 +231,14 @@ socket.on('game-cancelled', function(data) {
     showNotification(data.message, 'warning');
 });
 
+// Evento quando sala é deletada por inatividade
+socket.on('room-deleted', function(data) {
+    console.log('Sala deletada:', data.message);
+    alert(data.message);
+    // Redirecionar para página inicial
+    window.location.href = '/';
+});
+
 // Funções de interface
 function updatePlayersList(players) {
     const playersList = document.getElementById('players-list');
@@ -545,4 +553,5 @@ function getCookie(name) {
     }
     return null;
 }
+
 
