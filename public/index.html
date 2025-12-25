@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espião da Serra - Jogo Online</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🕵️🏔️ Espião da Serra</h1>
+        
+        <div class="card">
+            <h2>Criar Nova Sala</h2>
+            <form id="create-room-form">
+                <input type="text" id="player-name" placeholder="Seu nome" required>
+                <select id="time-limit">
+                    <option value="180">3 minutos</option>
+                    <option value="300" selected>5 minutos</option>
+                    <option value="420">7 minutos</option>
+                    <option value="600">10 minutos</option>
+                    <option value="900">15 minutos</option>
+                </select>
+
+		<select id="locations-count">
+            	    <option value="20">20 locais (Muito Fácil)</option>
+            	    <option value="30">30 locais (Fácil)</option>
+            	    <option value="50" selected>50 locais (Médio)</option>
+            	    <option value="80">80 locais (Difícil)</option>
+            	    <option value="136">136 locais (Muito Difícil)</option>
+        	</select>			
+
+                <button type="submit">Criar Sala</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Entrar em Sala</h2>
+            <form id="join-room-form">
+                <input type="text" id="join-name" placeholder="Seu nome" required>
+                <input type="text" id="room-code" placeholder="Código da sala" required>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

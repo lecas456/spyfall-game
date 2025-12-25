@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espião da Serra - Jogo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Área de informações do jogo -->
+        <div class="game-header">
+            <div class="room-info">
+                <span>Sala: <strong id="room-code"></strong></span>
+                <span id="timer">⏱️ --:--</span>
+            </div>
+            
+            <div class="game-info" id="game-info">
+                <!-- Informações específicas do jogador serão inseridas aqui -->
+            </div>
+        </div>
+
+        <!-- Lista de jogadores -->
+        <div class="players-section">
+            <h3>Jogadores</h3>
+            <div id="players-list" class="players-list">
+                <!-- Lista de jogadores será inserida aqui -->
+            </div>
+        </div>
+
+        <!-- Controles do jogo -->
+        <div class="game-controls" id="game-controls">
+            <!-- Controles específicos do estado do jogo -->
+        </div>
+
+        <!-- Área de anotações -->
+        <div class="notes-section">
+            <h3>Suas Anotações</h3>
+            <div id="notes-area">
+                <!-- Anotações serão inseridas aqui -->
+            </div>
+        </div>
+
+        <!-- Modal de votação -->
+        <div id="voting-modal" class="modal">
+            <div class="modal-content">
+                <h3>Votação - Quem é o espião?</h3>
+                <div id="voting-options"></div>
+                <button id="confirm-vote" disabled>Confirmar Voto</button>
+            </div>
+        </div>
+
+        <!-- Modal de resultado -->
+        <div id="result-modal" class="modal">
+            <div class="modal-content">
+                <h3>Resultado do Jogo</h3>
+                <div id="result-content"></div>
+                <button id="play-again">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/game.js"></script>
+</body>
+</html>
