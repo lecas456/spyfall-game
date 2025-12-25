@@ -83,6 +83,7 @@ class Room {
     this.scores = new Map();
     this.locationsCount = 50; // ADICIONAR ESTA LINHA
     this.availableLocations = []; // ADICIONAR ESTA LINHA
+    this.deleteTimeout = null; // ADICIONAR ESTA LINHA
   }
 
   addPlayer(playerId, name, socketId) {
@@ -139,6 +140,31 @@ class Room {
     this.startTimer();
     
     return true;
+  }
+
+  scheduleDelete() {
+    // Cancelar timeout anterior se existir
+    if (this.deleteTimeout) {
+      clearTimeout(this.deleteTimeout);
+      this.deleteTimeout = null;
+    }
+    
+    // Agendar deleção em 30 segundos
+    this.deleteTimeout = setTimeout(() => {
+      console.log(`Sala ${this.code} será deletada - vazia por 30 segundos`);
+      activeRooms.delete(this.code);
+      console.log('Salas ativas restantes:', activeRooms.size);
+    }, 30000); // 30 segundos
+    
+    console.log(`Sala ${this.code} agendada para deleção em 30 segundos`);
+  }
+  
+  cancelDelete() {
+    if (this.deleteTimeout) {
+      clearTimeout(this.deleteTimeout);
+      this.deleteTimeout = null;
+      console.log(`Deleção da sala ${this.code} cancelada - jogador reconectou`);
+    }
   }
 
   startTimer() {
@@ -381,7 +407,7 @@ io.on('connection', (socket) => {
       socket.roomCode = roomCode;
       console.log(`Novo jogador ${playerName} criado na sala ${roomCode}`);
     }
-
+    room.cancelDelete();
     socket.emit('joined-room', {
       roomCode,
       playerId: currentPlayerId,
@@ -622,42 +648,30 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('=== USUÁRIO DESCONECTADO ===');
-    console.log('Socket ID:', socket.id);
-    console.log('Player ID:', socket.playerId);
-    console.log('Room Code:', socket.roomCode);
+    console.log('Usuário desconectado:', socket.id);
     
-    // Encontrar em qual sala o jogador estava
     const roomCode = socket.roomCode;
     const playerId = socket.playerId;
     
     if (roomCode && playerId) {
       const room = activeRooms.get(roomCode);
-      console.log('Sala encontrada:', !!room);
       
       if (room) {
-        console.log('Jogadores na sala antes da remoção:', Array.from(room.players.keys()));
-        console.log('Jogador existe na sala?', room.players.has(playerId));
-        
         if (room.players.has(playerId)) {
           const player = room.players.get(playerId);
-          console.log(`=== REMOVENDO JOGADOR ${player.name} DA SALA ${roomCode} ===`);
-          
-          // Se era o dono da sala e tem outros jogadores, transferir propriedade
           const wasOwner = player.isOwner;
           room.removePlayer(playerId);
           
-          console.log('Jogadores restantes:', room.players.size);
-          console.log('Nomes restantes:', Array.from(room.players.values()).map(p => p.name));
-          
           // Se ainda tem jogadores na sala
           if (room.players.size > 0) {
+            // Cancelar deleção se estava agendada
+            room.cancelDelete();
+            
             // Se o dono saiu, fazer o próximo jogador virar dono
             if (wasOwner) {
               const newOwner = Array.from(room.players.values())[0];
               newOwner.isOwner = true;
               room.owner = newOwner.id;
-              console.log(`Novo dono da sala ${roomCode}: ${newOwner.name}`);
             }
             
             // Notificar outros jogadores sobre a saída
@@ -677,9 +691,7 @@ io.on('connection', (socket) => {
             
             // Se estava jogando e agora tem menos de 3 jogadores, cancelar jogo
             if (room.gameState === 'playing' && room.players.size < 3) {
-              console.log(`Sala ${roomCode} com poucos jogadores, cancelando jogo`);
               room.resetGame();
-              
               room.players.forEach((p) => {
                 const playerSocket = io.sockets.sockets.get(p.socketId);
                 if (playerSocket) {
@@ -693,21 +705,13 @@ io.on('connection', (socket) => {
             }
             
           } else {
-            // Sala vazia, remover da memória
-            console.log(`=== SALA ${roomCode} VAZIA, REMOVENDO ===`);
-            activeRooms.delete(roomCode);
-            console.log('Salas ativas restantes:', activeRooms.size);
+            // Sala vazia - AGENDAR deleção em 30 segundos ao invés de deletar imediatamente
+            console.log(`Sala ${roomCode} ficou vazia, agendando deleção em 30 segundos`);
+            room.scheduleDelete();
           }
-        } else {
-          console.log('Jogador não encontrado na sala (já foi removido?)');
         }
-      } else {
-        console.log('Sala não encontrada (já foi deletada?)');
       }
-    } else {
-      console.log('Dados de sala/jogador não encontrados no socket');
     }
-    console.log('=== FIM DA DESCONEXÃO ===\n');
   });
 
 }); // <-- ESTA chave fecha o io.on('connection')
@@ -715,4 +719,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+
 });
