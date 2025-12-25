@@ -368,31 +368,35 @@ io.on('connection', (socket) => {
       );
   
       if (existingPlayer) {
-       // Jogador existe NESTA SALA - reconectar
-       existingPlayer.socketId = socket.id; // Atualizar socketId
-       socket.join(roomCode);
-       socket.playerId = playerId;           // ✅ Definir playerId
-       socket.roomCode = roomCode;           // ✅ Definir roomCode
-       console.log(`🔗 Reconexão: Socket ${socket.id} associado: playerId=${playerId}, roomCode=${roomCode}`);
-       console.log(`Jogador ${playerName} reconectou à sala ${roomCode}`);
+        // Jogador existe NESTA SALA - reconectar
+        existingPlayer.socketId = socket.id;
+        socket.join(roomCode);
+        socket.playerId = playerId;
+        socket.roomCode = roomCode;
+        console.log(`🔗 Reconexão: Socket ${socket.id} associado: playerId=${playerId}, roomCode=${roomCode}`);
+        console.log(`Jogador ${playerName} reconectou à sala ${roomCode}`);
       } else {
-        // Jogador NÃO existe NESTA SALA - verificar se nome está disponível
-        const result = room.addPlayer(uuidv4(), playerName, socket.id);
+        // Jogador NÃO existe NESTA SALA - LIMPAR cookies e criar novo
+        console.log(`Jogador ${playerName} não existe na sala ${roomCode}, limpando dados e criando novo`);
+        
+        // Gerar novos IDs
+        const newPlayerId = uuidv4();
+        const result = room.addPlayer(newPlayerId, playerName, socket.id);
         
         if (result.error) {
           socket.emit('error', { message: result.error });
           return;
         }
         
-        currentPlayerId = uuidv4();
+        currentPlayerId = newPlayerId; // USAR O MESMO ID
         currentPlayerCode = result.playerCode;
         socket.join(roomCode);
         socket.playerId = currentPlayerId;
         socket.roomCode = roomCode;
-        console.log(`Jogador ${playerName} não existia na sala ${roomCode}, criando novo`);
+        console.log(`Novo jogador ${playerName} criado na sala ${roomCode} com ID ${currentPlayerId}`);
       }
     } else {
-      // Nova entrada sem dados salvos - verificar se nome está disponível
+      // Nova entrada sem dados salvos
       currentPlayerId = uuidv4();
       const result = room.addPlayer(currentPlayerId, playerName, socket.id);
       
@@ -407,7 +411,10 @@ io.on('connection', (socket) => {
       socket.roomCode = roomCode;
       console.log(`Novo jogador ${playerName} criado na sala ${roomCode}`);
     }
+    
+    // Cancelar deleção se estava agendada
     room.cancelDelete();
+    
     socket.emit('joined-room', {
       roomCode,
       playerId: currentPlayerId,
@@ -423,7 +430,7 @@ io.on('connection', (socket) => {
       currentPlayer: room.currentPlayer,
       playerOrder: room.playerOrder
     });
-
+    
     // Enviar informações específicas do jogo se estiver em andamento
     if (room.gameState === 'playing') {
       const player = room.players.get(currentPlayerId);
@@ -721,3 +728,4 @@ server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 
 });
+
