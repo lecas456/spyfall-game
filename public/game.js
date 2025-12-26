@@ -240,19 +240,20 @@ socket.on('room-deleted', function(data) {
 });
 
 // Adicionar após os outros eventos socket
+// Evento quando imagens são carregadas
 socket.on('images-loaded', function(data) {
     console.log('Imagens carregadas:', data);
     
-    // Atualizar interface com as imagens
-    const locationImg = document.querySelector('.location-image');
-    const professionImg = document.querySelector('.profession-image');
-    
-    if (locationImg && data.locationImage) {
-        locationImg.src = data.locationImage;
+    // Atualizar container da imagem do local
+    const locationContainer = document.getElementById('location-img-container');
+    if (locationContainer && data.locationImage) {
+        locationContainer.innerHTML = `<img src="${data.locationImage}" alt="Local" class="location-image">`;
     }
     
-    if (professionImg && data.professionImage) {
-        professionImg.src = data.professionImage;
+    // Atualizar container da imagem da profissão
+    const professionContainer = document.getElementById('profession-img-container');
+    if (professionContainer && data.professionImage) {
+        professionContainer.innerHTML = `<img src="${data.professionImage}" alt="Profissão" class="profession-image">`;
     }
 });
 
@@ -584,6 +585,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
