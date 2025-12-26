@@ -3,17 +3,14 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
-const axios = require('axios'); // ADICIONAR
+const supabase = require('./config/supabase'); // Usar o Supabase
 
-// Configuração Pexels
-const PEXELS_API_KEY = '0pMA0ybFzeZsxEfUICUpRvtPbk4po56TKxN0JxlYssKqlGgdZ27QqCmI';
-
-// Cache de imagens para evitar muitas requisições
+// Cache de imagens para evitar muitas consultas
 const imageCache = new Map();
 
-// Função para buscar imagem no Pexels
-async function searchPexelsImage(query, isLocation = true) {
-  const cacheKey = `${query}_${isLocation}`;
+// Função para buscar imagem no Supabase
+async function getImageFromSupabase(searchTerm, tipo) {
+  const cacheKey = `${searchTerm}_${tipo}`;
   
   // Verificar cache primeiro
   if (imageCache.has(cacheKey)) {
@@ -21,33 +18,28 @@ async function searchPexelsImage(query, isLocation = true) {
   }
 
   try {
-    const response = await axios.get('https://api.pexels.com/v1/search', {
-      headers: {
-        'Authorization': PEXELS_API_KEY
-      },
-      params: {
-        query: query,
-        per_page: 1,
-        orientation: isLocation ? 'landscape' : 'portrait'
-      }
-    });
+    const { data, error } = await supabase
+      .from('de_para_imagens')
+      .select('link_img')
+      .eq('pesquisa', searchTerm)
+      .eq('tipo', tipo)
+      .single();
 
-    if (response.data.photos && response.data.photos.length > 0) {
-      const imageUrl = response.data.photos[0].src.medium; // ou .large para maior qualidade
-      imageCache.set(cacheKey, imageUrl);
-      return imageUrl;
+    if (error) {
+      console.log(`Imagem não encontrada para: ${searchTerm} (${tipo})`);
+      return null;
     }
+
+    if (data && data.link_img) {
+      imageCache.set(cacheKey, data.link_img);
+      return data.link_img;
+    }
+
   } catch (error) {
-    console.error(`Erro ao buscar imagem para ${query}:`, error.message);
+    console.error(`Erro ao buscar imagem para ${searchTerm}:`, error.message);
   }
 
-  // Retornar imagem padrão se não encontrar
-  const defaultUrl = isLocation 
-    ? 'https://via.placeholder.com/400x250/667eea/white?text=Local' 
-    : 'https://via.placeholder.com/250x300/764ba2/white?text=Profissão';
-  
-  imageCache.set(cacheKey, defaultUrl);
-  return defaultUrl;
+  return null; // Retorna null se não encontrar
 }
 
 const app = express();
@@ -464,7 +456,7 @@ class Room {
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
     
-    // SORTEAR PROFISSÕES PRIMEIRO (sem imagens ainda)
+    // SORTEAR PROFISSÕES
     const locationProfessions = locationsWithProfessions[this.location];
     playerIds.forEach(playerId => {
       if (playerId !== this.spy) {
@@ -480,24 +472,23 @@ class Room {
     this.startTimer();
     
     // BUSCAR IMAGENS EM BACKGROUND (não bloquear o jogo)
-    this.loadImages();
+    this.loadImagesFromSupabase();
     
     return true;
 }
 
-// Nova função para carregar imagens em background
-async loadImages() {
+// Nova função para carregar imagens do Supabase
+async loadImagesFromSupabase() {
     try {
       // Buscar imagem do local
-      this.locationImage = await searchPexelsImage(this.location, true);
+      this.locationImage = await getImageFromSupabase(this.location, 'local');
       
       // Buscar imagens das profissões
       for (const [playerId, profession] of this.playerProfessions.entries()) {
-        const professionImage = await searchPexelsImage(profession, false);
+        const professionImage = await getImageFromSupabase(profession, 'profissao');
         this.playerProfessionImages.set(playerId, professionImage);
       }
       
-      // Notificar que as imagens foram carregadas
       console.log(`Imagens carregadas para sala ${this.code}`);
       
       // Enviar update para todos os jogadores
@@ -1124,6 +1115,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
