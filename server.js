@@ -16,55 +16,334 @@ app.use(cookieParser());
 const activeRooms = new Map();
 
 // Locais possíveis do jogo
-const locations = [
-  'Aeroporto', 'Banco', 'Praia', 'Casino', 'Cinema', 'Circo', 'Escola',
-  'Embaixada', 'Hospital', 'Hotel', 'Restaurante', 'Navio', 'Estação Espacial',
-  'Submarino', 'Teatro', 'Universidade', 'Base Militar', 'Parque', 'Shopping',
-  'Biblioteca', 'Prisão', 'Spa', 'Trem', 'Museu', 'Supermercado',
+// Locais com suas respectivas profissões/roles
+const locationsWithProfessions = {
+  'Aeroporto': ['Piloto', 'Comissário de Bordo', 'Controlador de Tráfego', 'Mecânico de Aeronaves', 'Segurança', 'Despachante', 'Bagageiro', 'Funcionário da Imigração', 'Passageiro', 'Limpeza'],
   
-  // Locais temáticos da serra:
-  'Cachoeira', 'Trilha da Montanha', 'Cabana na Serra', 'Mirante', 'Campo de Lavanda',
-  'Pousada Rural', 'Feira da Serra', 'Igreja do Pico', 'Plantação de Café', 'Chalé',
+  'Banco': ['Gerente', 'Caixa', 'Segurança', 'Contador', 'Consultor Financeiro', 'Atendente', 'Diretor', 'Cliente', 'Tesoureiro', 'Limpeza'],
   
-  // Mais 100 locais diversos:
-  'Posto de Gasolina', 'Farmácia', 'Padaria', 'Açougue', 'Floricultura',
-  'Pet Shop', 'Lavanderia', 'Barbearia', 'Salão de Beleza', 'Ótica',
-  'Loja de Roupas', 'Livraria', 'Papelaria', 'Loja de Eletrônicos', 'Joalheria',
-  'Consultório Médico', 'Dentista', 'Laboratório', 'Clínica Veterinária', 'Academia',
-  'Piscina', 'Quadra de Tênis', 'Campo de Futebol', 'Ginásio Esportivo', 'Pista de Skate',
+  'Praia': ['Salva-vidas', 'Vendedor Ambulante', 'Instrutor de Surf', 'Barqueiro', 'Mergulhador', 'Turista', 'Massagista', 'Garçom', 'Fotógrafo', 'Segurança'],
   
-  'Delegacia', 'Corpo de Bombeiros', 'Prefeitura', 'Cartório', 'Correios',
-  'Rodoviária', 'Metro', 'Porto', 'Marina', 'Heliporto',
-  'Fazenda', 'Sítio', 'Estábulo', 'Celeiro', 'Apiário',
-  'Vineyard', 'Destilaria', 'Cervejaria', 'Padaria Artesanal', 'Queijaria',
+  'Casino': ['Crupiê', 'Segurança', 'Garçom', 'Gerente', 'Caixa', 'Bartender', 'Jogador', 'Valet', 'Atendente VIP', 'Contador'],
   
-  'Boate', 'Bar', 'Pub', 'Karaokê', 'Boliche',
-  'Parque de Diversões', 'Zoológico', 'Aquário', 'Planetário', 'Observatório',
-  'Casa de Shows', 'Estúdio de Gravação', 'Galeria de Arte', 'Ateliê', 'Escola de Dança',
-  'Dojo', 'Escola de Música', 'Escola de Idiomas', 'Autoescola', 'Creche',
+  'Cinema': ['Operador de Projeção', 'Bilheteiro', 'Pipoqueiro', 'Faxineiro', 'Gerente', 'Segurança', 'Espectador', 'Técnico de Som', 'Porteiro', 'Vendedor'],
   
-  'Cemitério', 'Capela', 'Mosteiro', 'Sinagoga', 'Mesquita',
-  'Templo', 'Casa de Repouso', 'Orfanato', 'Abrigo', 'Centro Comunitário',
-  'Mercado Municipal', 'Feira Livre', 'Sacolão', 'Armazém', 'Depósito',
-  'Galpão', 'Fábrica', 'Usina', 'Refinaria', 'Construção Civil',
+  'Circo': ['Palhaço', 'Mágico', 'Domador', 'Acrobata', 'Trapezista', 'Vendedor de Pipoca', 'Bilheteiro', 'Espectador', 'Apresentador', 'Técnico'],
   
-  'Escritório', 'Coworking', 'Call Center', 'Agência de Viagens', 'Imobiliária',
-  'Laboratório de Informática', 'Lan House', 'Cyber Café', 'Gráfica', 'Editora',
-  'Emissora de TV', 'Rádio', 'Jornal', 'Agência de Publicidade', 'Estúdio Fotográfico',
+  'Escola': ['Professor', 'Diretor', 'Coordenador', 'Aluno', 'Zelador', 'Merendeira', 'Bibliotecário', 'Porteiro', 'Psicólogo', 'Enfermeiro'],
   
-  'Castelo', 'Palácio', 'Ruínas', 'Sítio Arqueológico', 'Catedral',
-  'Torre', 'Farol', 'Ponte', 'Túnel', 'Viaduto',
-  'Ilha', 'Caverna', 'Deserto', 'Vulcão', 'Geleira',
-  'Floresta', 'Savana', 'Pântano', 'Oásis', 'Canyon',
+  'Embaixada': ['Embaixador', 'Cônsul', 'Tradutor', 'Segurança', 'Recepcionista', 'Visitante', 'Secretário', 'Motorista', 'Advogado', 'Assessor'],
   
-  'Acampamento', 'Resort', 'Hostel', 'Motel', 'Pousada',
-  'Cruzeiro', 'Iate', 'Balsa', 'Teleférico', 'Funicular',
-  'Circo de Soleil', 'Parque Aquático', 'Termas', 'Casa de Jogos', 'Escape Room',
-  'Simulador', 'Realidade Virtual', 'Kart', 'Paintball', 'Laser Tag',
+  'Hospital': ['Médico', 'Enfermeiro', 'Cirurgião', 'Anestesista', 'Recepcionista', 'Paciente', 'Farmacêutico', 'Limpeza', 'Segurança', 'Nutricionista'],
   
-  'Loja de Antiguidades', 'Brechó', 'Casa de Leilões', 'Penhora', 'Casa de Câmbio',
-  'Lotérica', 'Tabacaria', 'Conveniência', 'Drive-Thru', 'Food Truck'
-];
+  'Hotel': ['Recepcionista', 'Camareira', 'Porteiro', 'Gerente', 'Garçom', 'Chef', 'Hóspede', 'Valet', 'Concierge', 'Limpeza'],
+  
+  'Restaurante': ['Chef', 'Garçom', 'Gerente', 'Cozinheiro', 'Bartender', 'Cliente', 'Limpeza', 'Caixa', 'Sommelier', 'Ajudante de Cozinha'],
+  
+  'Navio': ['Capitão', 'Marinheiro', 'Cozinheiro', 'Mecânico', 'Médico de Bordo', 'Passageiro', 'Limpeza', 'Segurança', 'Navegador', 'Engenheiro'],
+  
+  'Estação Espacial': ['Astronauta', 'Engenheiro', 'Cientista', 'Médico', 'Piloto', 'Técnico', 'Comunicador', 'Pesquisador', 'Comandante', 'Especialista'],
+  
+  'Submarino': ['Comandante', 'Sonar', 'Engenheiro', 'Torpedeiro', 'Navegador', 'Cozinheiro', 'Médico', 'Comunicador', 'Mecânico', 'Mergulhador'],
+  
+  'Teatro': ['Ator', 'Diretor', 'Cenógrafo', 'Músico', 'Bilheteiro', 'Espectador', 'Limpeza', 'Técnico de Som', 'Iluminador', 'Produtor'],
+  
+  'Universidade': ['Professor', 'Reitor', 'Estudante', 'Pesquisador', 'Bibliotecário', 'Secretário', 'Zelador', 'Segurança', 'Coordenador', 'Técnico'],
+  
+  'Base Militar': ['Soldado', 'Oficial', 'General', 'Piloto Militar', 'Mecânico', 'Médico Militar', 'Comunicador', 'Segurança', 'Instrutor', 'Analista'],
+  
+  'Parque': ['Guarda-Parque', 'Jardineiro', 'Segurança', 'Guia Turístico', 'Visitante', 'Limpeza', 'Veterinário', 'Fotógrafo', 'Monitor', 'Administrador'],
+  
+  'Shopping': ['Vendedor', 'Segurança', 'Gerente de Loja', 'Limpeza', 'Garçom', 'Cliente', 'Promotor', 'Manobrista', 'Atendente', 'Administrador'],
+  
+  'Biblioteca': ['Bibliotecário', 'Atendente', 'Segurança', 'Limpeza', 'Catalogador', 'Visitante', 'Arquivista', 'Técnico em Informática', 'Coordenador', 'Estagiário'],
+  
+  'Prisão': ['Guarda', 'Diretor', 'Psicólogo', 'Médico', 'Advogado', 'Detento', 'Limpeza', 'Capelão', 'Assistente Social', 'Segurança'],
+  
+  'Spa': ['Massagista', 'Esteticista', 'Recepcionista', 'Terapeuta', 'Instrutor de Yoga', 'Cliente', 'Limpeza', 'Gerente', 'Atendente', 'Segurança'],
+  
+  'Trem': ['Maquinista', 'Condutor', 'Revisor', 'Limpeza', 'Segurança', 'Passageiro', 'Mecânico', 'Controlador', 'Operador', 'Chefe de Trem'],
+  
+  'Museu': ['Curador', 'Guia', 'Segurança', 'Restaurador', 'Recepcionista', 'Visitante', 'Limpeza', 'Arquivista', 'Educador', 'Diretor'],
+  
+  'Supermercado': ['Caixa', 'Repositor', 'Açougueiro', 'Padeiro', 'Segurança', 'Cliente', 'Limpeza', 'Atendente', 'Fiscal', 'Empacotador'],
+  
+  'Cachoeira': ['Guia Turístico', 'Fotógrafo', 'Turista', 'Vendedor Ambulante', 'Salva-vidas', 'Biólogo', 'Mergulhador', 'Escalador', 'Ambientalista', 'Segurança'],
+  
+  'Trilha da Montanha': ['Guia de Trilha', 'Montanhista', 'Turista', 'Fotógrafo', 'Biólogo', 'Guarda-Parque', 'Vendedor', 'Socorrista', 'Pesquisador', 'Aventureiro'],
+  
+  'Cabana na Serra': ['Proprietário', 'Hóspede', 'Caseiro', 'Guia Local', 'Cozinheiro', 'Turista', 'Fotógrafo', 'Escritor', 'Artista', 'Limpeza'],
+  
+  'Mirante': ['Guia Turístico', 'Fotógrafo', 'Turista', 'Vendedor', 'Segurança', 'Casal', 'Artista', 'Blogueiro', 'Observador de Aves', 'Mantenedor'],
+  
+  'Campo de Lavanda': ['Agricultor', 'Turista', 'Fotógrafo', 'Vendedor', 'Guia', 'Aromaterapeuta', 'Colhedor', 'Proprietário', 'Visitante', 'Pesquisador'],
+  
+  'Pousada Rural': ['Proprietário', 'Hóspede', 'Cozinheiro', 'Camareira', 'Recepcionista', 'Turista', 'Guia Local', 'Jardineiro', 'Caseiro', 'Garçom'],
+  
+  'Feira da Serra': ['Feirante', 'Cliente', 'Organizador', 'Agricultor', 'Artesão', 'Turista', 'Segurança', 'Limpeza', 'Músico', 'Fotógrafo'],
+  
+  'Igreja do Pico': ['Padre', 'Fiel', 'Turista', 'Organista', 'Zelador', 'Guia', 'Fotógrafo', 'Segurança', 'Coordenador', 'Voluntário'],
+  
+  'Plantação de Café': ['Fazendeiro', 'Colhedor', 'Turista', 'Agrônomo', 'Trabalhador Rural', 'Degustador', 'Guia', 'Comprador', 'Pesquisador', 'Motorista'],
+  
+  'Chalé': ['Proprietário', 'Hóspede', 'Caseiro', 'Turista', 'Cozinheiro', 'Limpeza', 'Guia Local', 'Fotógrafo', 'Casal', 'Artista'],
+  
+  'Posto de Gasolina': ['Frentista', 'Gerente', 'Cliente', 'Mecânico', 'Caixa', 'Limpeza', 'Segurança', 'Entregador', 'Caminhoneiro', 'Lojista'],
+  
+  'Farmácia': ['Farmacêutico', 'Balconista', 'Cliente', 'Gerente', 'Entregador', 'Segurança', 'Limpeza', 'Estagiário', 'Representante', 'Caixa'],
+  
+  'Padaria': ['Padeiro', 'Atendente', 'Cliente', 'Confeiteiro', 'Caixa', 'Ajudante', 'Limpeza', 'Entregador', 'Gerente', 'Fornecedor'],
+  
+  'Açougue': ['Açougueiro', 'Atendente', 'Cliente', 'Caixa', 'Ajudante', 'Limpeza', 'Gerente', 'Entregador', 'Fornecedor', 'Fiscal'],
+  
+  'Floricultura': ['Florista', 'Cliente', 'Atendente', 'Jardineiro', 'Entregador', 'Caixa', 'Decorador', 'Fornecedor', 'Limpeza', 'Gerente'],
+  
+  'Pet Shop': ['Vendedor', 'Veterinário', 'Cliente', 'Tosador', 'Caixa', 'Atendente', 'Limpeza', 'Gerente', 'Entregador', 'Adestrador'],
+  
+  'Lavanderia': ['Atendente', 'Cliente', 'Operador', 'Gerente', 'Entregador', 'Limpeza', 'Passadeira', 'Caixa', 'Técnico', 'Motorista'],
+  
+  'Barbearia': ['Barbeiro', 'Cliente', 'Atendente', 'Caixa', 'Limpeza', 'Gerente', 'Manicure', 'Estagiário', 'Fornecedor', 'Segurança'],
+  
+  'Salão de Beleza': ['Cabeleireiro', 'Cliente', 'Manicure', 'Esteticista', 'Recepcionista', 'Limpeza', 'Gerente', 'Massagista', 'Atendente', 'Fornecedor'],
+  
+  'Ótica': ['Vendedor', 'Cliente', 'Optometrista', 'Atendente', 'Gerente', 'Técnico', 'Caixa', 'Limpeza', 'Representante', 'Estagiário'],
+  
+  'Loja de Roupas': ['Vendedor', 'Cliente', 'Gerente', 'Provador', 'Caixa', 'Atendente', 'Estilista', 'Limpeza', 'Segurança', 'Vitrinista'],
+  
+  'Livraria': ['Vendedor', 'Cliente', 'Gerente', 'Atendente', 'Caixa', 'Organizador', 'Limpeza', 'Autor', 'Leitor', 'Estagiário'],
+  
+  'Papelaria': ['Vendedor', 'Cliente', 'Atendente', 'Caixa', 'Gerente', 'Estudante', 'Professor', 'Limpeza', 'Organizador', 'Fornecedor'],
+  
+  'Loja de Eletrônicos': ['Vendedor', 'Cliente', 'Técnico', 'Gerente', 'Caixa', 'Atendente', 'Segurança', 'Demonstrador', 'Limpeza', 'Representante'],
+  
+  'Joalheria': ['Joalheiro', 'Cliente', 'Vendedor', 'Gerente', 'Segurança', 'Avaliador', 'Caixa', 'Limpeza', 'Ourives', 'Atendente'],
+  
+  'Consultório Médico': ['Médico', 'Paciente', 'Enfermeiro', 'Recepcionista', 'Secretária', 'Limpeza', 'Segurança', 'Atendente', 'Estagiário', 'Acompanhante'],
+  
+  'Dentista': ['Dentista', 'Paciente', 'Assistente', 'Recepcionista', 'Técnico', 'Limpeza', 'Secretária', 'Acompanhante', 'Estagiário', 'Atendente'],
+  
+  'Laboratório': ['Técnico', 'Médico', 'Paciente', 'Recepcionista', 'Bioquímico', 'Limpeza', 'Segurança', 'Atendente', 'Estagiário', 'Entregador'],
+  
+  'Clínica Veterinária': ['Veterinário', 'Cliente', 'Assistente', 'Recepcionista', 'Técnico', 'Limpeza', 'Atendente', 'Estagiário', 'Pet', 'Tosador'],
+  
+  'Academia': ['Instrutor', 'Aluno', 'Recepcionista', 'Personal Trainer', 'Limpeza', 'Gerente', 'Nutricionista', 'Fisioterapeuta', 'Atendente', 'Segurança'],
+  
+  'Piscina': ['Salva-vidas', 'Nadador', 'Instrutor', 'Limpeza', 'Atendente', 'Gerente', 'Criança', 'Pai/Mãe', 'Segurança', 'Técnico'],
+  
+  'Quadra de Tênis': ['Jogador', 'Instrutor', 'Árbitro', 'Espectador', 'Limpeza', 'Gerente', 'Atendente', 'Segurança', 'Técnico', 'Treinador'],
+  
+  'Campo de Futebol': ['Jogador', 'Técnico', 'Árbitro', 'Torcedor', 'Segurança', 'Jornalista', 'Fotógrafo', 'Limpeza', 'Gandula', 'Médico'],
+  
+  'Ginásio Esportivo': ['Atleta', 'Técnico', 'Árbitro', 'Espectador', 'Segurança', 'Limpeza', 'Comentarista', 'Jornalista', 'Médico', 'Atendente'],
+  
+  'Pista de Skate': ['Skatista', 'Instrutor', 'Espectador', 'Segurança', 'Limpeza', 'Fotógrafo', 'Amigo', 'Vendedor', 'Juiz', 'Técnico'],
+  
+  'Delegacia': ['Policial', 'Delegado', 'Detido', 'Advogado', 'Vítima', 'Escrivão', 'Segurança', 'Limpeza', 'Investigador', 'Atendente'],
+  
+  'Corpo de Bombeiros': ['Bombeiro', 'Comandante', 'Vítima', 'Paramédico', 'Motorista', 'Operador', 'Técnico', 'Instrutor', 'Segurança', 'Voluntário'],
+  'Prefeitura': ['Prefeito', 'Secretário', 'Atendente', 'Cidadão', 'Funcionário', 'Segurança', 'Limpeza', 'Assessor', 'Contador', 'Recepcionista'],
+  'Cartório': ['Escrivão', 'Cliente', 'Tabelião', 'Atendente', 'Advogado', 'Contador', 'Segurança', 'Limpeza', 'Estagiário', 'Recepcionista'],
+  'Correios': ['Carteiro', 'Cliente', 'Atendente', 'Gerente', 'Operador', 'Segurança', 'Limpeza', 'Motorista', 'Separador', 'Caixa'],
+  'Rodoviária': ['Motorista', 'Passageiro', 'Cobrador', 'Atendente', 'Segurança', 'Limpeza', 'Vendedor', 'Bagageiro', 'Fiscal', 'Anunciante'],
+  'Metro': ['Maquinista', 'Passageiro', 'Segurança', 'Limpeza', 'Operador', 'Fiscal', 'Atendente', 'Técnico', 'Vendedor', 'Supervisor'],
+  'Porto': ['Estivador', 'Marinheiro', 'Operador', 'Segurança', 'Fiscal', 'Piloto', 'Técnico', 'Supervisor', 'Limpeza', 'Passageiro'],
+  'Marina': ['Marinheiro', 'Proprietário de Barco', 'Mecânico Naval', 'Segurança', 'Atendente', 'Turista', 'Pescador', 'Instrutor', 'Limpeza', 'Gerente'],
+  'Heliporto': ['Piloto', 'Passageiro', 'Mecânico', 'Controlador', 'Segurança', 'Atendente', 'Técnico', 'Operador', 'Limpeza', 'Supervisor'],
+  'Fazenda': ['Fazendeiro', 'Peão', 'Veterinário', 'Agrônomo', 'Visitante', 'Trabalhador', 'Motorista', 'Cozinheiro', 'Caseiro', 'Turista'],
+  'Sítio': ['Sitiante', 'Visitante', 'Caseiro', 'Trabalhador', 'Turista', 'Veterinário', 'Hóspede', 'Cozinheiro', 'Jardineiro', 'Guia'],
+  'Estábulo': ['Tratador', 'Veterinário', 'Cavaleiro', 'Proprietário', 'Visitante', 'Instrutor', 'Ferrador', 'Limpeza', 'Turista', 'Jóquei'],
+  'Celeiro': ['Fazendeiro', 'Trabalhador Rural', 'Visitante', 'Veterinário', 'Turista', 'Caseiro', 'Motorista', 'Armazenador', 'Inspetor', 'Limpeza'],
+  'Apiário': ['Apicultor', 'Ajudante', 'Visitante', 'Comprador', 'Veterinário', 'Pesquisador', 'Turista', 'Fotógrafo', 'Estudante', 'Inspetor'],
+  'Vineyard': ['Viticultor', 'Colhedor', 'Sommelier', 'Turista', 'Degustador', 'Guia', 'Trabalhador', 'Comprador', 'Enólogo', 'Fotógrafo'],
+  'Destilaria': ['Destilador', 'Operário', 'Degustador', 'Turista', 'Guia', 'Comprador', 'Técnico', 'Supervisor', 'Vendedor', 'Inspetor'],
+  'Cervejaria': ['Cervejeiro', 'Degustador', 'Turista', 'Operário', 'Guia', 'Vendedor', 'Técnico', 'Supervisor', 'Cliente', 'Sommelier'],
+  'Padaria Artesanal': ['Padeiro Artesão', 'Cliente', 'Ajudante', 'Atendente', 'Degustador', 'Fornecedor', 'Caixa', 'Limpeza', 'Turista', 'Chef'],
+  'Queijaria': ['Queijeiro', 'Degustador', 'Turista', 'Operário', 'Comprador', 'Guia', 'Vendedor', 'Técnico', 'Inspetor', 'Cliente'],
+  'Boate': ['DJ', 'Cliente', 'Barman', 'Segurança', 'Garçom', 'Dançarino', 'Gerente', 'Limpeza', 'Caixa', 'Promoter'],
+  'Bar': ['Barman', 'Cliente', 'Garçom', 'Segurança', 'Gerente', 'Músico', 'Limpeza', 'Caixa', 'Cozinheiro', 'Atendente'],
+  'Pub': ['Barman', 'Cliente', 'Garçom', 'Gerente', 'Segurança', 'Cozinheiro', 'Limpeza', 'Músico', 'Caixa', 'Atendente'],
+  'Karaokê': ['DJ', 'Cliente', 'Cantor', 'Garçom', 'Atendente', 'Segurança', 'Barman', 'Limpeza', 'Técnico de Som', 'Gerente'],
+  'Boliche': ['Jogador', 'Atendente', 'Técnico', 'Garçom', 'Gerente', 'Limpeza', 'Segurança', 'Caixa', 'Instrutor', 'Espectador'],
+  'Parque de Diversões': ['Operador', 'Visitante', 'Segurança', 'Vendedor', 'Limpeza', 'Técnico', 'Gerente', 'Criança', 'Pai/Mãe', 'Atendente'],
+  'Zoológico': ['Tratador', 'Visitante', 'Veterinário', 'Guia', 'Segurança', 'Biólogo', 'Limpeza', 'Fotógrafo', 'Criança', 'Educador'],
+  'Aquário': ['Biólogo Marinho', 'Visitante', 'Guia', 'Mergulhador', 'Técnico', 'Veterinário', 'Limpeza', 'Educador', 'Fotógrafo', 'Criança'],
+  'Planetário': ['Astrônomo', 'Visitante', 'Guia', 'Técnico', 'Operador', 'Educador', 'Professor', 'Estudante', 'Limpeza', 'Segurança'],
+  'Observatório': ['Astrônomo', 'Pesquisador', 'Visitante', 'Técnico', 'Guia', 'Estudante', 'Fotógrafo', 'Operador', 'Professor', 'Cientista'],
+  'Casa de Shows': ['Artista', 'Espectador', 'Técnico de Som', 'Segurança', 'Produtor', 'Vendedor', 'Limpeza', 'Barman', 'Roadie', 'Gerente'],
+  'Estúdio de Gravação': ['Músico', 'Produtor', 'Técnico de Som', 'Engenheiro', 'Cantor', 'Instrumentista', 'Assistente', 'Diretor', 'Visitante', 'Estagiário'],
+  'Galeria de Arte': ['Curador', 'Artista', 'Visitante', 'Colecionador', 'Crítico', 'Segurança', 'Guia', 'Vendedor', 'Limpeza', 'Fotógrafo'],
+  'Ateliê': ['Artista', 'Estudante', 'Modelo', 'Visitante', 'Professor', 'Colecionador', 'Crítico', 'Assistente', 'Fornecedor', 'Limpeza'],
+  'Escola de Dança': ['Professor de Dança', 'Aluno', 'Coreógrafo', 'Músico', 'Recepcionista', 'Pai/Mãe', 'Visitante', 'Limpeza', 'Diretor', 'Assistente'],
+  'Dojo': ['Sensei', 'Aluno', 'Faixa Preta', 'Iniciante', 'Árbitro', 'Pai/Mãe', 'Visitante', 'Limpeza', 'Assistente', 'Mestre'],
+  'Escola de Música': ['Professor', 'Aluno', 'Músico', 'Diretor', 'Recepcionista', 'Pai/Mãe', 'Visitante', 'Técnico', 'Limpeza', 'Afinador'],
+  'Escola de Idiomas': ['Professor', 'Aluno', 'Coordenador', 'Recepcionista', 'Nativo', 'Diretor', 'Visitante', 'Estagiário', 'Limpeza', 'Atendente'],
+  'Autoescola': ['Instrutor', 'Aluno', 'Diretor', 'Recepcionista', 'Examinador', 'Atendente', 'Mecânico', 'Limpeza', 'Segurança', 'Despachante'],
+  'Creche': ['Professora', 'Criança', 'Cuidador', 'Diretora', 'Pai/Mãe', 'Cozinheiro', 'Limpeza', 'Segurança', 'Enfermeiro', 'Estagiário'],
+  'Cemitério': ['Coveiro', 'Visitante', 'Padre', 'Segurança', 'Enlutado', 'Jardineiro', 'Administrador', 'Limpeza', 'Florista', 'Agente Funerário'],
+  'Capela': ['Padre', 'Fiel', 'Noivo/Noiva', 'Convidado', 'Organista', 'Zelador', 'Fotógrafo', 'Florista', 'Coordenador', 'Visitante'],
+  'Mosteiro': ['Monge', 'Abade', 'Visitante', 'Peregrino', 'Jardineiro', 'Cozinheiro', 'Bibliotecário', 'Guia', 'Zelador', 'Turista'],
+  'Sinagoga': ['Rabino', 'Fiel', 'Cantor', 'Visitante', 'Estudante', 'Zelador', 'Segurança', 'Professor', 'Criança', 'Turista'],
+  'Mesquita': ['Imam', 'Fiel', 'Visitante', 'Estudante', 'Zelador', 'Guia', 'Segurança', 'Professor', 'Turista', 'Muezim'],
+  'Templo': ['Sacerdote', 'Fiel', 'Monge', 'Visitante', 'Turista', 'Guia', 'Zelador', 'Estudante', 'Peregrino', 'Segurança'],
+  'Casa de Repouso': ['Enfermeiro', 'Idoso', 'Médico', 'Visitante', 'Cuidador', 'Fisioterapeuta', 'Limpeza', 'Cozinheiro', 'Recepcionista', 'Diretor'],
+  
+  'Orfanato': ['Cuidador', 'Criança', 'Diretor', 'Visitante', 'Professor', 'Psicólogo', 'Voluntário', 'Cozinheiro', 'Limpeza', 'Enfermeiro'],
+  
+  'Abrigo': ['Coordenador', 'Morador', 'Voluntário', 'Assistente Social', 'Doador', 'Cozinheiro', 'Segurança', 'Limpeza', 'Psicólogo', 'Visitante'],
+  
+  'Centro Comunitário': ['Coordenador', 'Usuário', 'Voluntário', 'Professor', 'Atendente', 'Segurança', 'Limpeza', 'Organizador', 'Palestrante', 'Visitante'],
+  
+  'Mercado Municipal': ['Feirante', 'Cliente', 'Administrador', 'Segurança', 'Limpeza', 'Fiscal', 'Carregador', 'Vendedor', 'Comprador', 'Turista'],
+  
+  'Feira Livre': ['Feirante', 'Cliente', 'Fiscal', 'Carregador', 'Organizador', 'Vendedor', 'Comprador', 'Limpeza', 'Segurança', 'Turista'],
+  
+  'Sacolão': ['Vendedor', 'Cliente', 'Caixa', 'Gerente', 'Repositor', 'Limpeza', 'Segurança', 'Entregador', 'Fornecedor', 'Fiscal'],
+  
+  'Armazém': ['Operador', 'Supervisor', 'Motorista', 'Carregador', 'Segurança', 'Administrador', 'Conferente', 'Limpeza', 'Técnico', 'Visitante'],
+  
+  'Depósito': ['Almoxarife', 'Carregador', 'Motorista', 'Supervisor', 'Conferente', 'Segurança', 'Operador', 'Limpeza', 'Administrador', 'Fornecedor'],
+  
+  'Galpão': ['Operário', 'Supervisor', 'Segurança', 'Motorista', 'Técnico', 'Administrador', 'Carregador', 'Soldador', 'Limpeza', 'Inspetor'],
+  
+  'Fábrica': ['Operário', 'Supervisor', 'Engenheiro', 'Técnico', 'Gerente', 'Segurança', 'Limpeza', 'Controlador', 'Inspetor', 'Manutenção'],
+  
+  'Usina': ['Operador', 'Engenheiro', 'Técnico', 'Supervisor', 'Segurança', 'Manutenção', 'Inspetor', 'Administrador', 'Soldador', 'Eletricista'],
+  
+  'Refinaria': ['Operador', 'Engenheiro', 'Técnico', 'Supervisor', 'Segurança', 'Inspetor', 'Soldador', 'Manutenção', 'Químico', 'Administrador'],
+  
+  'Construção Civil': ['Pedreiro', 'Engenheiro', 'Arquiteto', 'Operário', 'Mestre de Obras', 'Eletricista', 'Encanador', 'Soldador', 'Segurança', 'Servente'],
+  
+  'Escritório': ['Executivo', 'Secretário', 'Gerente', 'Analista', 'Estagiário', 'Diretor', 'Contador', 'Vendedor', 'Limpeza', 'Segurança'],
+  
+  'Coworking': ['Freelancer', 'Empreendedor', 'Designer', 'Programador', 'Consultor', 'Recepcionista', 'Limpeza', 'Segurança', 'Gerente', 'Cliente'],
+  
+  'Call Center': ['Operador', 'Supervisor', 'Gerente', 'Técnico', 'Atendente', 'Vendedor', 'Limpeza', 'Segurança', 'Treinador', 'Analista'],
+  
+  'Agência de Viagens': ['Agente', 'Cliente', 'Gerente', 'Consultor', 'Atendente', 'Vendedor', 'Segurança', 'Limpeza', 'Guia', 'Representante'],
+  
+  'Imobiliária': ['Corretor', 'Cliente', 'Gerente', 'Avaliador', 'Secretário', 'Vendedor', 'Atendente', 'Limpeza', 'Segurança', 'Fotógrafo'],
+  
+  'Laboratório de Informática': ['Técnico', 'Usuário', 'Professor', 'Aluno', 'Administrador', 'Suporte', 'Limpeza', 'Segurança', 'Estagiário', 'Supervisor'],
+  
+  'Lan House': ['Atendente', 'Gamer', 'Técnico', 'Cliente', 'Gerente', 'Segurança', 'Limpeza', 'Caixa', 'Jovem', 'Supervisor'],
+  
+  'Cyber Café': ['Atendente', 'Cliente', 'Técnico', 'Gerente', 'Usuário', 'Estudante', 'Gamer', 'Limpeza', 'Segurança', 'Caixa'],
+  
+  'Gráfica': ['Operador', 'Designer', 'Cliente', 'Técnico', 'Gerente', 'Vendedor', 'Atendente', 'Limpeza', 'Entregador', 'Supervisor'],
+  
+  'Editora': ['Editor', 'Escritor', 'Designer', 'Revisor', 'Gerente', 'Atendente', 'Vendedor', 'Limpeza', 'Estagiário', 'Diretor'],
+  
+  'Emissora de TV': ['Apresentador', 'Jornalista', 'Cinegrafista', 'Diretor', 'Produtor', 'Técnico', 'Segurança', 'Maquiador', 'Ator', 'Visitante'],
+  
+  'Rádio': ['Locutor', 'Produtor', 'Técnico de Som', 'Jornalista', 'DJ', 'Operador', 'Gerente', 'Visitante', 'Publicitário', 'Estagiário'],
+  
+  'Jornal': ['Jornalista', 'Editor', 'Fotógrafo', 'Diagramador', 'Revisor', 'Diretor', 'Vendedor', 'Entregador', 'Colunista', 'Estagiário'],
+  
+  'Agência de Publicidade': ['Publicitário', 'Designer', 'Diretor de Arte', 'Cliente', 'Account', 'Redator', 'Produtor', 'Atendente', 'Estagiário', 'Gerente'],
+  
+  'Estúdio Fotográfico': ['Fotógrafo', 'Cliente', 'Assistente', 'Modelo', 'Editor', 'Produtor', 'Iluminador', 'Maquiador', 'Diretor de Arte', 'Estagiário'],
+  
+  'Castelo': ['Rei/Rainha', 'Nobre', 'Guarda', 'Servo', 'Turista', 'Guia', 'Cozinheiro', 'Jardineiro', 'Cavaleiro', 'Historiador'],
+  
+  'Palácio': ['Governante', 'Ministro', 'Guarda', 'Servo', 'Diplomata', 'Turista', 'Guia', 'Segurança', 'Cozinheiro', 'Jardineiro'],
+  
+  'Ruínas': ['Arqueólogo', 'Turista', 'Guia', 'Historiador', 'Fotógrafo', 'Estudante', 'Pesquisador', 'Professor', 'Segurança', 'Explorador'],
+  
+  'Sítio Arqueológico': ['Arqueólogo', 'Pesquisador', 'Turista', 'Guia', 'Estudante', 'Professor', 'Fotógrafo', 'Historiador', 'Segurança', 'Escavador'],
+  
+  'Catedral': ['Bispo', 'Padre', 'Fiel', 'Turista', 'Guia', 'Organista', 'Coral', 'Zelador', 'Segurança', 'Fotógrafo'],
+  
+  'Torre': ['Guarda', 'Turista', 'Guia', 'Segurança', 'Fotógrafo', 'Observador', 'Técnico', 'Mantenedor', 'Visitante', 'Historiador'],
+  
+  'Farol': ['Faroleiro', 'Marinheiro', 'Turista', 'Guia', 'Técnico', 'Navegador', 'Pescador', 'Fotógrafo', 'Mantenedor', 'Visitante'],
+  
+  'Ponte': ['Engenheiro', 'Pedestre', 'Motorista', 'Turista', 'Fotógrafo', 'Inspetor', 'Segurança', 'Mantenedor', 'Ciclista', 'Corredor'],
+  
+  'Túnel': ['Operário', 'Motorista', 'Engenheiro', 'Segurança', 'Técnico', 'Inspetor', 'Pedestre', 'Mantenedor', 'Supervisor', 'Eletricista'],
+  
+  'Viaduto': ['Engenheiro', 'Motorista', 'Pedestre', 'Inspetor', 'Segurança', 'Mantenedor', 'Técnico', 'Fotógrafo', 'Turista', 'Supervisor'],
+  
+  'Ilha': ['Morador', 'Turista', 'Pescador', 'Guia', 'Barqueiro', 'Mergulhador', 'Biólogo', 'Fotógrafo', 'Náufrago', 'Pesquisador'],
+  
+  'Caverna': ['Espeleólogo', 'Turista', 'Guia', 'Geólogo', 'Fotógrafo', 'Explorador', 'Pesquisador', 'Aventureiro', 'Biólogo', 'Segurança'],
+  
+  'Deserto': ['Beduíno', 'Turista', 'Guia', 'Caravaneiro', 'Explorador', 'Fotógrafo', 'Pesquisador', 'Nômade', 'Aventureiro', 'Camelo'],
+  
+  'Vulcão': ['Vulcanólogo', 'Turista', 'Guia', 'Pesquisador', 'Fotógrafo', 'Geólogo', 'Explorador', 'Cientista', 'Aventureiro', 'Segurança'],
+  
+  'Geleira': ['Glaciólogo', 'Explorador', 'Turista', 'Guia', 'Pesquisador', 'Fotógrafo', 'Cientista', 'Aventureiro', 'Esquiador', 'Climatologista'],
+  
+  'Floresta': ['Guarda Florestal', 'Turista', 'Biólogo', 'Caçador', 'Guia', 'Pesquisador', 'Fotógrafo', 'Aventureiro', 'Acampante', 'Lenhador'],
+  
+  'Savana': ['Guia de Safari', 'Turista', 'Fotógrafo', 'Biólogo', 'Caçador', 'Pesquisador', 'Veterinário', 'Ranger', 'Explorador', 'Motorista'],
+  
+  'Pântano': ['Biólogo', 'Pescador', 'Turista', 'Guia', 'Pesquisador', 'Fotógrafo', 'Caçador', 'Explorador', 'Barqueiro', 'Cientista'],
+  
+  'Oásis': ['Beduíno', 'Turista', 'Guia', 'Caravaneiro', 'Fotógrafo', 'Explorador', 'Comerciante', 'Nômade', 'Viajante', 'Camelo'],
+  
+  'Canyon': ['Escalador', 'Turista', 'Guia', 'Fotógrafo', 'Geólogo', 'Aventureiro', 'Explorador', 'Rafting', 'Pesquisador', 'Segurança'],
+  
+  'Acampamento': ['Escoteiro', 'Líder', 'Acampante', 'Cozinheiro', 'Guia', 'Monitor', 'Criança', 'Pai/Mãe', 'Instrutor', 'Segurança'],
+  
+  'Resort': ['Hóspede', 'Recepcionista', 'Garçom', 'Chef', 'Animador', 'Segurança', 'Camareira', 'Gerente', 'Salva-vidas', 'Massagista'],
+  
+  'Hostel': ['Mochileiro', 'Recepcionista', 'Hóspede', 'Limpeza', 'Gerente', 'Turista', 'Viajante', 'Cozinheiro', 'Segurança', 'Guia'],
+  
+  'Motel': ['Recepcionista', 'Hóspede', 'Camareira', 'Segurança', 'Gerente', 'Limpeza', 'Casal', 'Atendente', 'Porteiro', 'Manobrista'],
+  
+  'Pousada': ['Proprietário', 'Hóspede', 'Recepcionista', 'Camareira', 'Cozinheiro', 'Turista', 'Guia Local', 'Limpeza', 'Garçom', 'Caseiro'],
+  
+  'Cruzeiro': ['Capitão', 'Passageiro', 'Comissário', 'Chef', 'Animador', 'Médico', 'Garçom', 'Segurança', 'Técnico', 'Limpeza'],
+  
+  'Iate': ['Capitão', 'Proprietário', 'Convidado', 'Marinheiro', 'Chef', 'Comissário', 'Segurança', 'Mecânico', 'Turista', 'Pescador'],
+  
+  'Balsa': ['Operador', 'Passageiro', 'Motorista', 'Cobrador', 'Marinheiro', 'Segurança', 'Turista', 'Comerciante', 'Mecânico', 'Fiscal'],
+  
+  'Teleférico': ['Operador', 'Passageiro', 'Técnico', 'Turista', 'Segurança', 'Guia', 'Fotógrafo', 'Mantenedor', 'Supervisor', 'Atendente'],
+  
+  'Funicular': ['Operador', 'Passageiro', 'Técnico', 'Turista', 'Segurança', 'Guia', 'Mantenedor', 'Supervisor', 'Fotógrafo', 'Condutor'],
+  
+  'Circo de Soleil': ['Artista', 'Acrobata', 'Músico', 'Espectador', 'Diretor', 'Técnico', 'Segurança', 'Vendedor', 'Produtor', 'Maquiador'],
+  
+  'Parque Aquático': ['Salva-vidas', 'Visitante', 'Operador', 'Segurança', 'Limpeza', 'Gerente', 'Criança', 'Pai/Mãe', 'Instrutor', 'Atendente'],
+  
+  'Termas': ['Terapeuta', 'Cliente', 'Atendente', 'Massagista', 'Recepcionista', 'Limpeza', 'Segurança', 'Gerente', 'Médico', 'Instrutor'],
+  
+  'Casa de Jogos': ['Crupiê', 'Jogador', 'Segurança', 'Gerente', 'Garçom', 'Caixa', 'Cliente', 'Observador', 'Limpeza', 'Bartender'],
+  
+  'Escape Room': ['Monitor', 'Jogador', 'Ator', 'Técnico', 'Gerente', 'Atendente', 'Designer', 'Segurança', 'Limpeza', 'Organizador'],
+  
+  'Simulador': ['Operador', 'Usuário', 'Técnico', 'Instrutor', 'Cliente', 'Atendente', 'Programador', 'Segurança', 'Gerente', 'Testador'],
+  
+  'Realidade Virtual': ['Operador', 'Usuário', 'Técnico', 'Desenvolvedor', 'Cliente', 'Instrutor', 'Atendente', 'Testador', 'Designer', 'Gerente'],
+  
+  'Kart': ['Piloto', 'Mecânico', 'Espectador', 'Instrutor', 'Operador', 'Segurança', 'Cronometrista', 'Atendente', 'Técnico', 'Gerente'],
+  
+  'Paintball': ['Jogador', 'Instrutor', 'Operador', 'Segurança', 'Árbitro', 'Espectador', 'Técnico', 'Atendente', 'Limpeza', 'Gerente'],
+  
+  'Laser Tag': ['Jogador', 'Operador', 'Instrutor', 'Técnico', 'Atendente', 'Segurança', 'Árbitro', 'Espectador', 'Gerente', 'Programador'],
+  
+  'Loja de Antiguidades': ['Antiquário', 'Cliente', 'Colecionador', 'Avaliador', 'Restaurador', 'Vendedor', 'Atendente', 'Especialista', 'Limpeza', 'Segurança'],
+  
+  'Brechó': ['Vendedor', 'Cliente', 'Organizador', 'Avaliador', 'Atendente', 'Caixa', 'Doador', 'Comprador', 'Limpeza', 'Gerente'],
+  
+  'Casa de Leilões': ['Leiloeiro', 'Comprador', 'Avaliador', 'Vendedor', 'Segurança', 'Atendente', 'Especialista', 'Colecionador', 'Observador', 'Gerente'],
+  
+  'Penhora': ['Oficial de Justiça', 'Devedor', 'Comprador', 'Avaliador', 'Segurança', 'Advogado', 'Leiloeiro', 'Atendente', 'Observador', 'Interessado'],
+  
+  'Casa de Câmbio': ['Operador', 'Cliente', 'Gerente', 'Caixa', 'Atendente', 'Turista', 'Empresário', 'Segurança', 'Contador', 'Supervisor'],
+  
+  'Lotérica': ['Atendente', 'Cliente', 'Apostador', 'Gerente', 'Caixa', 'Segurança', 'Entregador', 'Ganhador', 'Idoso', 'Limpeza'],
+  
+  'Tabacaria': ['Vendedor', 'Cliente', 'Fumante', 'Colecionador', 'Gerente', 'Atendente', 'Especialista', 'Fornecedor', 'Segurança', 'Limpeza'],
+  
+  'Conveniência': ['Atendente', 'Cliente', 'Gerente', 'Caixa', 'Repositor', 'Limpeza', 'Segurança', 'Entregador', 'Fornecedor', 'Viajante'],
+  
+  'Drive-Thru': ['Atendente', 'Cliente', 'Cozinheiro', 'Motorista', 'Gerente', 'Caixa', 'Entregador', 'Supervisor', 'Limpeza', 'Segurança'],
+  
+  'Food Truck': ['Chef', 'Cliente', 'Ajudante', 'Atendente', 'Caixa', 'Entregador', 'Proprietário', 'Turista', 'Trabalhador', 'Passante']
+};
+
 // Classe para gerenciar uma sala
 class Room {
   constructor(code, owner) {
@@ -77,22 +356,20 @@ class Room {
     this.currentPlayer = null;
     this.playerOrder = [];
     this.timer = null;
-    this.timeLimit = 10; // 300;
+    this.timeLimit = 300; // MUDANÇA 4: Voltar para 300
     this.timeRemaining = 0;
     this.votes = new Map();
     this.scores = new Map();
-    this.locationsCount = 50; // ADICIONAR ESTA LINHA
-    this.availableLocations = []; // ADICIONAR ESTA LINHA
-    this.deleteTimeout = null; // ADICIONAR ESTA LINHA
-    this.inactivityTimeout = null; // ADICIONAR ESTA LINHA
+    this.locationsCount = 50;
+    this.availableLocations = [];
+    this.deleteTimeout = null;
+    this.inactivityTimeout = null;
+    this.playerProfessions = new Map();
   }
 
   addPlayer(playerId, name, socketId) {
     // Limpar nome
     const cleanName = name.trim();
-    
-
-
     
     // Verificar se já existe alguém com este nome na sala (mas não é o mesmo jogador)
     const existingPlayerWithName = Array.from(this.players.values()).find(
@@ -100,7 +377,7 @@ class Room {
     );
     
     if (existingPlayerWithName) {
-      console.log(`Nome ${cleanName} já existe na sala (pertence a ${existingPlayerWithName.id})`);
+      console.log(`Nome $${cleanName} já existe na sala (pertence a $${existingPlayerWithName.id})`);
       return { error: 'Nome já existe na sala' };
     }
     
@@ -115,27 +392,38 @@ class Room {
     };
     
     this.players.set(playerId, playerData);
-    console.log(`Jogador ${cleanName} adicionado à sala ${this.code} com sucesso`);
+    console.log(`Jogador $${cleanName} adicionado à sala $${this.code} com sucesso`);
     console.log('Jogadores na sala agora:', Array.from(this.players.values()).map(p => p.name));
     return { success: true, playerCode };
   }
 
   removePlayer(playerId) {
     this.players.delete(playerId);
+    this.playerProfessions.delete(playerId); // MUDANÇA 1: Adicionar esta linha
   }
 
   startGame() {
     if (this.players.size < 3) return false;
     
-    // Cancelar timeout de inatividade
     this.cancelInactivityDelete();
-    
     this.gameState = 'playing';
-    this.availableLocations = locations.slice(0, this.locationsCount);
-    this.location = this.availableLocations[Math.floor(Math.random() * this.availableLocations.length)];
+    
+    // MUDANÇA 2: Usar locais com profissões
+    const availableLocationKeys = Object.keys(locationsWithProfessions).slice(0, this.locationsCount);
+    this.availableLocations = availableLocationKeys; // Salvar para uso posterior
+    this.location = availableLocationKeys[Math.floor(Math.random() * availableLocationKeys.length)];
     
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
+    
+    // SORTEAR PROFISSÕES PARA CADA JOGADOR (exceto espião)
+    const locationProfessions = locationsWithProfessions[this.location];
+    playerIds.forEach(playerId => {
+      if (playerId !== this.spy) {
+        const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
+        this.playerProfessions.set(playerId, randomProfession);
+      }
+    });
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
     this.currentPlayer = this.playerOrder[Math.floor(Math.random() * this.playerOrder.length)];
@@ -144,7 +432,7 @@ class Room {
     this.startTimer();
     
     return true;
- }
+  }
 
   scheduleDelete() {
     // Cancelar timeout anterior se existir
@@ -289,6 +577,8 @@ class Room {
     this.timeRemaining = 0;
     this.votes.clear();
     this.lastResult = null;
+    this.playerProfessions.clear();
+    this.availableLocations = []; // MUDANÇA 3: Adicionar esta linha
     
     // Parar timer se estiver rodando
     if (this.timer) {
@@ -309,25 +599,6 @@ app.get('/', (req, res) => {
 app.get('/room/:code', (req, res) => {
   res.sendFile(__dirname + '/public/game.html');
 });
-
-// Rota de debug (remover em produção)
-// app.get('/debug/rooms', (req, res) => {
-//   const roomsData = Array.from(activeRooms.entries()).map(([code, room]) => ({
-//     code,
-//     players: Array.from(room.players.values()).map(p => ({
-//       id: p.id,
-//       name: p.name,
-//       socketId: p.socketId,
-//       isOwner: p.isOwner
-//     })),
-//     gameState: room.gameState
-//   }));
-//   
-//   res.json({
-//     totalRooms: activeRooms.size,
-//     rooms: roomsData
-//   });
-// });
 
 app.post('/create-room', (req, res) => {
   const { playerName, timeLimit, locationsCount} = req.body;
@@ -407,11 +678,11 @@ io.on('connection', (socket) => {
         socket.join(roomCode);
         socket.playerId = playerId;
         socket.roomCode = roomCode;
-        console.log(`🔗 Reconexão: Socket ${socket.id} associado: playerId=${playerId}, roomCode=${roomCode}`);
-        console.log(`Jogador ${playerName} reconectou à sala ${roomCode}`);
+        console.log(`🔗 Reconexão: Socket $${socket.id} associado: playerId=$${playerId}, roomCode=${roomCode}`);
+        console.log(`Jogador $${playerName} reconectou à sala $${roomCode}`);
       } else {
         // Jogador NÃO existe NESTA SALA - LIMPAR cookies e criar novo
-        console.log(`Jogador ${playerName} não existe na sala ${roomCode}, limpando dados e criando novo`);
+        console.log(`Jogador $${playerName} não existe na sala $${roomCode}, limpando dados e criando novo`);
         
         // Gerar novos IDs
         const newPlayerId = uuidv4();
@@ -427,7 +698,7 @@ io.on('connection', (socket) => {
         socket.join(roomCode);
         socket.playerId = currentPlayerId;
         socket.roomCode = roomCode;
-        console.log(`Novo jogador ${playerName} criado na sala ${roomCode} com ID ${currentPlayerId}`);
+        console.log(`Novo jogador $${playerName} criado na sala $${roomCode} com ID ${currentPlayerId}`);
       }
     } else {
       // Nova entrada sem dados salvos
@@ -443,7 +714,7 @@ io.on('connection', (socket) => {
       socket.join(roomCode);
       socket.playerId = currentPlayerId;
       socket.roomCode = roomCode;
-      console.log(`Novo jogador ${playerName} criado na sala ${roomCode}`);
+      console.log(`Novo jogador $${playerName} criado na sala $${roomCode}`);
     }
     
     // Cancelar deleção se estava agendada
@@ -472,7 +743,7 @@ io.on('connection', (socket) => {
         // Reenviar informações completas para o espião
         socket.emit('game-started', {
           isSpy: true,
-          locations: room.availableLocations,
+          locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
           currentPlayer: room.currentPlayer,
           playerOrder: room.playerOrder,
           timeRemaining: room.timeRemaining
@@ -482,7 +753,8 @@ io.on('connection', (socket) => {
         socket.emit('game-started', {
           isSpy: false,
           location: room.location,
-          locations: room.availableLocations,
+          profession: room.playerProfessions.get(currentPlayerId),
+          locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
           currentPlayer: room.currentPlayer,
           playerOrder: room.playerOrder,
           timeRemaining: room.timeRemaining
@@ -530,12 +802,12 @@ io.on('connection', (socket) => {
           // ADICIONAR ESTAS LINHAS: Garantir que os dados do socket estão corretos
           playerSocket.playerId = player.id;
           playerSocket.roomCode = roomCode;
-          console.log(`🔄 Socket ${playerSocket.id} atualizado: playerId=${player.id}, roomCode=${roomCode}`);
+          console.log(`🔄 Socket $${playerSocket.id} atualizado: playerId=$${player.id}, roomCode=${roomCode}`);
           
           if (player.id === room.spy) {
             playerSocket.emit('game-started', {
               isSpy: true,
-              locations: room.availableLocations,
+              locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
               currentPlayer: room.currentPlayer,
               playerOrder: room.playerOrder,
               timeRemaining: room.timeRemaining
@@ -544,7 +816,8 @@ io.on('connection', (socket) => {
             playerSocket.emit('game-started', {
               isSpy: false,
               location: room.location,
-              locations: room.availableLocations,
+              profession: room.playerProfessions.get(player.id),
+              locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
               currentPlayer: room.currentPlayer,
               playerOrder: room.playerOrder,
               timeRemaining: room.timeRemaining
@@ -760,7 +1033,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-
 });
-
-
