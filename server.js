@@ -634,6 +634,8 @@ class Room {
     this.lastResult = null;
     this.playerProfessions.clear();
     this.availableLocations = []; // MUDANÇA 3: Adicionar esta linha
+    this.playerProfessionImages.clear(); // ADICIONAR
+    this.locationImage = null; // ADICIONAR
     
     // Parar timer se estiver rodando
     if (this.timer) {
@@ -1093,4 +1095,5 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
