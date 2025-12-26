@@ -3,6 +3,52 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios'); // ADICIONAR
+
+// Configuração Pexels
+const PEXELS_API_KEY = '0pMA0ybFzeZsxEfUICUpRvtPbk4po56TKxN0JxlYssKqlGgdZ27QqCmI';
+
+// Cache de imagens para evitar muitas requisições
+const imageCache = new Map();
+
+// Função para buscar imagem no Pexels
+async function searchPexelsImage(query, isLocation = true) {
+  const cacheKey = `${query}_${isLocation}`;
+  
+  // Verificar cache primeiro
+  if (imageCache.has(cacheKey)) {
+    return imageCache.get(cacheKey);
+  }
+
+  try {
+    const response = await axios.get('https://api.pexels.com/v1/search', {
+      headers: {
+        'Authorization': PEXELS_API_KEY
+      },
+      params: {
+        query: query,
+        per_page: 1,
+        orientation: isLocation ? 'landscape' : 'portrait'
+      }
+    });
+
+    if (response.data.photos && response.data.photos.length > 0) {
+      const imageUrl = response.data.photos[0].src.medium; // ou .large para maior qualidade
+      imageCache.set(cacheKey, imageUrl);
+      return imageUrl;
+    }
+  } catch (error) {
+    console.error(`Erro ao buscar imagem para ${query}:`, error.message);
+  }
+
+  // Retornar imagem padrão se não encontrar
+  const defaultUrl = isLocation 
+    ? 'https://via.placeholder.com/400x250/667eea/white?text=Local' 
+    : 'https://via.placeholder.com/250x300/764ba2/white?text=Profissão';
+  
+  imageCache.set(cacheKey, defaultUrl);
+  return defaultUrl;
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -365,6 +411,8 @@ class Room {
     this.deleteTimeout = null;
     this.inactivityTimeout = null;
     this.playerProfessions = new Map();
+    this.playerProfessionImages = new Map(); // ADICIONAR ESTA LINHA
+    this.locationImage = null; // ADICIONAR ESTA LINHA
   }
 
   addPlayer(playerId, name, socketId) {
@@ -402,28 +450,35 @@ class Room {
     this.playerProfessions.delete(playerId); // MUDANÇA 1: Adicionar esta linha
   }
 
-  startGame() {
+  async startGame() {
     if (this.players.size < 3) return false;
     
     this.cancelInactivityDelete();
     this.gameState = 'playing';
     
-    // MUDANÇA 2: Usar locais com profissões
+    // Usar locais com profissões
     const availableLocationKeys = Object.keys(locationsWithProfessions).slice(0, this.locationsCount);
-    this.availableLocations = availableLocationKeys; // Salvar para uso posterior
+    this.availableLocations = availableLocationKeys;
     this.location = availableLocationKeys[Math.floor(Math.random() * availableLocationKeys.length)];
     
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
     
-    // SORTEAR PROFISSÕES PARA CADA JOGADOR (exceto espião)
+    // BUSCAR IMAGEM DO LOCAL
+    this.locationImage = await searchPexelsImage(this.location, true);
+    
+    // SORTEAR PROFISSÕES E BUSCAR IMAGENS
     const locationProfessions = locationsWithProfessions[this.location];
-    playerIds.forEach(playerId => {
+    for (const playerId of playerIds) {
       if (playerId !== this.spy) {
         const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
         this.playerProfessions.set(playerId, randomProfession);
+        
+        // Buscar imagem da profissão
+        const professionImage = await searchPexelsImage(randomProfession, false);
+        this.playerProfessionImages.set(playerId, professionImage);
       }
-    });
+    }
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
     this.currentPlayer = this.playerOrder[Math.floor(Math.random() * this.playerOrder.length)];
@@ -432,7 +487,7 @@ class Room {
     this.startTimer();
     
     return true;
-  }
+}
 
   scheduleDelete() {
     // Cancelar timeout anterior se existir
@@ -753,7 +808,9 @@ io.on('connection', (socket) => {
         socket.emit('game-started', {
           isSpy: false,
           location: room.location,
+          locationImage: room.locationImage, // ADICIONAR
           profession: room.playerProfessions.get(currentPlayerId),
+          professionImage: room.playerProfessionImages.get(currentPlayerId), // ADICIONAR
           locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
           currentPlayer: room.currentPlayer,
           playerOrder: room.playerOrder,
@@ -813,10 +870,12 @@ io.on('connection', (socket) => {
               timeRemaining: room.timeRemaining
             });
           } else {
-            playerSocket.emit('game-started', {
+            socket.emit('game-started', {
               isSpy: false,
               location: room.location,
-              profession: room.playerProfessions.get(player.id),
+              locationImage: room.locationImage, // ADICIONAR
+              profession: room.playerProfessions.get(currentPlayerId),
+              professionImage: room.playerProfessionImages.get(currentPlayerId), // ADICIONAR
               locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
               currentPlayer: room.currentPlayer,
               playerOrder: room.playerOrder,
@@ -1034,3 +1093,4 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
