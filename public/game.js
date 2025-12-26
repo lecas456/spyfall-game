@@ -262,7 +262,6 @@ function updatePlayersList(players) {
 }
 
 function updateGameInfo(data) {
-    // ADICIONAR ESTA LINHA NO INÍCIO:
     window.currentGameLocations = data.locations;
     
     const gameInfo = document.getElementById('game-info');
@@ -284,8 +283,16 @@ function updateGameInfo(data) {
         window.isCurrentPlayerSpy = false;
         gameInfo.className = 'game-info';
         gameInfo.innerHTML = `
-            <h4>📍 Local: <strong>${data.location}</strong></h4>
-            <h4>👔 Sua Profissão: <strong>${data.profession || 'Aguardando...'}</strong></h4>
+            <div class="game-images">
+                <div class="location-info">
+                    <h4>📍 Local: <strong>${data.location}</strong></h4>
+                    ${data.locationImage ? `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : ''}
+                </div>
+                <div class="profession-info">
+                    <h4>👔 Sua Profissão: <strong>${data.profession || 'Aguardando...'}</strong></h4>
+                    ${data.professionImage ? `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : ''}
+                </div>
+            </div>
             <p>Descubra quem é o espião fazendo perguntas!</p>
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
             <div class="locations-grid">
@@ -557,6 +564,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
