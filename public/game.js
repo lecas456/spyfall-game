@@ -262,6 +262,9 @@ function updatePlayersList(players) {
 }
 
 function updateGameInfo(data) {
+    // ADICIONAR ESTA LINHA NO INÍCIO:
+    window.currentGameLocations = data.locations;
+    
     const gameInfo = document.getElementById('game-info');
     
     if (data.isSpy) {
@@ -282,6 +285,7 @@ function updateGameInfo(data) {
         gameInfo.className = 'game-info';
         gameInfo.innerHTML = `
             <h4>📍 Local: <strong>${data.location}</strong></h4>
+            <h4>👔 Sua Profissão: <strong>${data.profession || 'Aguardando...'}</strong></h4>
             <p>Descubra quem é o espião fazendo perguntas!</p>
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
             <div class="locations-grid">
@@ -427,8 +431,8 @@ document.getElementById('play-again').addEventListener('click', function() {
 });
 
 function showSpyGuessModal() {
-    // Pegar todos os locais
-    const locations = Array.from(document.querySelectorAll('.location-item')).map(item => item.textContent);
+    // Usar locais da variável global ao invés do DOM
+    const locations = window.currentGameLocations || [];
     
     if (locations.length === 0) {
         alert('Erro: locais não encontrados');
@@ -553,5 +557,6 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
