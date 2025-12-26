@@ -303,11 +303,11 @@ function updateGameInfo(data) {
             <div class="game-images">
                 <div class="location-info">
                     <h4>📍 Local: <strong>${data.location}</strong></h4>
-                    ${data.locationImage ? `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : ''}
+                    <img src="https://via.placeholder.com/200x120/667eea/white?text=Carregando+Local..." alt="${data.location}" class="location-image">
                 </div>
                 <div class="profession-info">
                     <h4>👔 Sua Profissão: <strong>${data.profession || 'Aguardando...'}</strong></h4>
-                    ${data.professionImage ? `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : ''}
+                    <img src="https://via.placeholder.com/200x120/764ba2/white?text=Carregando+Profissão..." alt="${data.profession}" class="profession-image">
                 </div>
             </div>
             <p>Descubra quem é o espião fazendo perguntas!</p>
@@ -581,6 +581,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
