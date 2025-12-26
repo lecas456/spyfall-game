@@ -9,15 +9,21 @@ const supabase = require('./config/supabase'); // Usar o Supabase
 const imageCache = new Map();
 
 // Função para buscar imagem no Supabase
+// Função para buscar imagem no Supabase
 async function getImageFromSupabase(searchTerm, tipo) {
   const cacheKey = `${searchTerm}_${tipo}`;
   
+  console.log(`🔍 Buscando imagem: "${searchTerm}" tipo: "${tipo}"`);
+  
   // Verificar cache primeiro
   if (imageCache.has(cacheKey)) {
+    console.log(`✅ Imagem encontrada no cache: ${searchTerm}`);
     return imageCache.get(cacheKey);
   }
 
   try {
+    console.log(`📡 Consultando Supabase para: "${searchTerm}" (${tipo})`);
+    
     const { data, error } = await supabase
       .from('de_para_imagens')
       .select('link_img')
@@ -25,21 +31,26 @@ async function getImageFromSupabase(searchTerm, tipo) {
       .eq('tipo', tipo)
       .single();
 
+    console.log(`📋 Resultado da consulta:`, { data, error });
+
     if (error) {
-      console.log(`Imagem não encontrada para: ${searchTerm} (${tipo})`);
+      console.log(`❌ Erro na consulta: ${error.message}`);
       return null;
     }
 
     if (data && data.link_img) {
+      console.log(`✅ Imagem encontrada: ${data.link_img}`);
       imageCache.set(cacheKey, data.link_img);
       return data.link_img;
+    } else {
+      console.log(`❌ Nenhuma imagem encontrada para: ${searchTerm}`);
     }
 
   } catch (error) {
-    console.error(`Erro ao buscar imagem para ${searchTerm}:`, error.message);
+    console.error(`🚨 Erro ao buscar imagem para ${searchTerm}:`, error.message);
   }
 
-  return null; // Retorna null se não encontrar
+  return null;
 }
 
 const app = express();
@@ -479,22 +490,32 @@ class Room {
 
 // Nova função para carregar imagens do Supabase
 async loadImagesFromSupabase() {
+    console.log(`🖼️ Iniciando carregamento de imagens para sala ${this.code}`);
+    console.log(`📍 Local: ${this.location}`);
+    console.log(`👔 Profissões: ${Array.from(this.playerProfessions.values()).join(', ')}`);
+    
     try {
       // Buscar imagem do local
+      console.log(`🔍 Buscando imagem do local: ${this.location}`);
       this.locationImage = await getImageFromSupabase(this.location, 'local');
+      console.log(`📸 Imagem do local resultado: ${this.locationImage}`);
       
       // Buscar imagens das profissões
       for (const [playerId, profession] of this.playerProfessions.entries()) {
+        console.log(`🔍 Buscando imagem da profissão: ${profession} para jogador ${playerId}`);
         const professionImage = await getImageFromSupabase(profession, 'profissao');
+        console.log(`📸 Imagem da profissão resultado: ${professionImage}`);
         this.playerProfessionImages.set(playerId, professionImage);
       }
       
-      console.log(`Imagens carregadas para sala ${this.code}`);
+      console.log(`✅ Todas as imagens processadas para sala ${this.code}`);
+      console.log(`📋 Resumo: locationImage=${this.locationImage}, profissionImages=${this.playerProfessionImages.size}`);
       
       // Enviar update para todos os jogadores
       this.players.forEach((player) => {
         const playerSocket = io.sockets.sockets.get(player.socketId);
         if (playerSocket && player.id !== this.spy) {
+          console.log(`📤 Enviando imagens para jogador: ${player.name}`);
           playerSocket.emit('images-loaded', {
             locationImage: this.locationImage,
             professionImage: this.playerProfessionImages.get(player.id)
@@ -503,8 +524,7 @@ async loadImagesFromSupabase() {
       });
       
     } catch (error) {
-      console.error('Erro ao carregar imagens:', error);
-      // Jogo continua mesmo sem imagens
+      console.error('🚨 Erro ao carregar imagens:', error);
     }
 }
 
@@ -1115,6 +1135,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
