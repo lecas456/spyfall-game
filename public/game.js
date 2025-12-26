@@ -239,6 +239,23 @@ socket.on('room-deleted', function(data) {
     window.location.href = '/';
 });
 
+// Adicionar após os outros eventos socket
+socket.on('images-loaded', function(data) {
+    console.log('Imagens carregadas:', data);
+    
+    // Atualizar interface com as imagens
+    const locationImg = document.querySelector('.location-image');
+    const professionImg = document.querySelector('.profession-image');
+    
+    if (locationImg && data.locationImage) {
+        locationImg.src = data.locationImage;
+    }
+    
+    if (professionImg && data.professionImage) {
+        professionImg.src = data.professionImage;
+    }
+});
+
 // Funções de interface
 function updatePlayersList(players) {
     const playersList = document.getElementById('players-list');
@@ -564,6 +581,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
