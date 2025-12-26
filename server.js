@@ -464,21 +464,14 @@ class Room {
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
     
-    // BUSCAR IMAGEM DO LOCAL
-    this.locationImage = await searchPexelsImage(this.location, true);
-    
-    // SORTEAR PROFISSÕES E BUSCAR IMAGENS
+    // SORTEAR PROFISSÕES PRIMEIRO (sem imagens ainda)
     const locationProfessions = locationsWithProfessions[this.location];
-    for (const playerId of playerIds) {
+    playerIds.forEach(playerId => {
       if (playerId !== this.spy) {
         const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
         this.playerProfessions.set(playerId, randomProfession);
-        
-        // Buscar imagem da profissão
-        const professionImage = await searchPexelsImage(randomProfession, false);
-        this.playerProfessionImages.set(playerId, professionImage);
       }
-    }
+    });
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
     this.currentPlayer = this.playerOrder[Math.floor(Math.random() * this.playerOrder.length)];
@@ -486,7 +479,42 @@ class Room {
     this.timeRemaining = this.timeLimit;
     this.startTimer();
     
+    // BUSCAR IMAGENS EM BACKGROUND (não bloquear o jogo)
+    this.loadImages();
+    
     return true;
+}
+
+// Nova função para carregar imagens em background
+async loadImages() {
+    try {
+      // Buscar imagem do local
+      this.locationImage = await searchPexelsImage(this.location, true);
+      
+      // Buscar imagens das profissões
+      for (const [playerId, profession] of this.playerProfessions.entries()) {
+        const professionImage = await searchPexelsImage(profession, false);
+        this.playerProfessionImages.set(playerId, professionImage);
+      }
+      
+      // Notificar que as imagens foram carregadas
+      console.log(`Imagens carregadas para sala ${this.code}`);
+      
+      // Enviar update para todos os jogadores
+      this.players.forEach((player) => {
+        const playerSocket = io.sockets.sockets.get(player.socketId);
+        if (playerSocket && player.id !== this.spy) {
+          playerSocket.emit('images-loaded', {
+            locationImage: this.locationImage,
+            professionImage: this.playerProfessionImages.get(player.id)
+          });
+        }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao carregar imagens:', error);
+      // Jogo continua mesmo sem imagens
+    }
 }
 
   scheduleDelete() {
@@ -846,7 +874,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('start-game', () => {
+  socket.on('start-game', async () => {
     const roomCode = socket.roomCode;
     const room = activeRooms.get(roomCode);
     
@@ -854,64 +882,65 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (room.startGame()) {
-      room.players.forEach((player) => {
-        const playerSocket = io.sockets.sockets.get(player.socketId);
-        if (playerSocket) {
-          // ADICIONAR ESTAS LINHAS: Garantir que os dados do socket estão corretos
-          playerSocket.playerId = player.id;
-          playerSocket.roomCode = roomCode;
-          console.log(`🔄 Socket $${playerSocket.id} atualizado: playerId=$${player.id}, roomCode=${roomCode}`);
-          
-          if (player.id === room.spy) {
-            playerSocket.emit('game-started', {
-              isSpy: true,
-              locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-              currentPlayer: room.currentPlayer,
-              playerOrder: room.playerOrder,
-              timeRemaining: room.timeRemaining
-            });
-          } else {
-            socket.emit('game-started', {
-              isSpy: false,
-              location: room.location,
-              locationImage: room.locationImage, // ADICIONAR
-              profession: room.playerProfessions.get(currentPlayerId),
-              professionImage: room.playerProfessionImages.get(currentPlayerId), // ADICIONAR
-              locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-              currentPlayer: room.currentPlayer,
-              playerOrder: room.playerOrder,
-              timeRemaining: room.timeRemaining
-            });
+    try {
+      const gameStarted = await room.startGame();
+      if (gameStarted) {
+        room.players.forEach((player) => {
+          const playerSocket = io.sockets.sockets.get(player.socketId);
+          if (playerSocket) {
+            playerSocket.playerId = player.id;
+            playerSocket.roomCode = roomCode;
+            
+            if (player.id === room.spy) {
+              playerSocket.emit('game-started', {
+                isSpy: true,
+                locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+                currentPlayer: room.currentPlayer,
+                playerOrder: room.playerOrder,
+                timeRemaining: room.timeRemaining
+              });
+            } else {
+              playerSocket.emit('game-started', {
+                isSpy: false,
+                location: room.location,
+                profession: room.playerProfessions.get(player.id),
+                locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+                currentPlayer: room.currentPlayer,
+                playerOrder: room.playerOrder,
+                timeRemaining: room.timeRemaining
+              });
+            }
           }
-        }
-      });
+        });
 
-      const timerInterval = setInterval(() => {
-         if (room.gameState !== 'playing') {
-           clearInterval(timerInterval);
-           return;
-         }
-    
-         io.to(roomCode).emit('timer-update', {
-           timeRemaining: room.timeRemaining
-         });
-         
-         if (room.timeRemaining <= 0) {
-           clearInterval(timerInterval);
-           
-           // ADICIONAR ESTA PARTE: Iniciar votação quando tempo acaba
-           console.log(`⏰ Tempo esgotado na sala ${roomCode}, iniciando votação`);
-           if (room.startVoting()) {
-             io.to(roomCode).emit('voting-started', {
-               players: Array.from(room.players.values()).map(p => ({
-                 id: p.id,
-                 name: p.name
-               }))
-             });
-           }
-         }
-       }, 1000);
+        // Timer code continua igual...
+        const timerInterval = setInterval(() => {
+          if (room.gameState !== 'playing') {
+            clearInterval(timerInterval);
+            return;
+          }
+      
+          io.to(roomCode).emit('timer-update', {
+            timeRemaining: room.timeRemaining
+          });
+          
+          if (room.timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            console.log(`⏰ Tempo esgotado na sala ${roomCode}, iniciando votação`);
+            if (room.startVoting()) {
+              io.to(roomCode).emit('voting-started', {
+                players: Array.from(room.players.values()).map(p => ({
+                  id: p.id,
+                  name: p.name
+                }))
+              });
+            }
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar jogo:', error);
+      socket.emit('error', { message: 'Erro ao iniciar jogo' });
     }
   });
 
@@ -1095,5 +1124,6 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
