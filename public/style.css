@@ -782,3 +782,67 @@ button:disabled {
   }
 
 }
+
+/* Placeholders de imagem */
+.image-placeholder {
+  width: 100%;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.loading-placeholder {
+  background: #f3f4f6;
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 20px;
+  color: #6b7280;
+  font-style: italic;
+  width: 100%;
+  max-width: 200px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Imagens do jogo */
+.game-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.location-info, .profession-info {
+  text-align: center;
+}
+
+.location-image, .profession-image {
+  width: 100%;
+  max-width: 200px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+
+.location-image:hover, .profession-image:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .game-images {
+    grid-template-columns: 1fr;
+  }
+  
+  .location-image, .profession-image {
+    max-width: 180px;
+    height: 130px;
+  }
+}
