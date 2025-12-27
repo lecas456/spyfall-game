@@ -247,13 +247,21 @@ socket.on('images-loaded', function(data) {
     // Atualizar container da imagem do local
     const locationContainer = document.getElementById('location-img-container');
     if (locationContainer && data.locationImage) {
-        locationContainer.innerHTML = `<img src="${data.locationImage}" alt="Local" class="location-image">`;
+        const location = locationContainer.closest('.location-info').querySelector('.location-overlay')?.textContent.replace('📍 ', '') || 'Local';
+        locationContainer.innerHTML = `
+            <img src="${data.locationImage}" alt="${location}" class="location-image">
+            <div class="location-overlay">📍 ${location}</div>
+        `;
     }
     
-    // Atualizar container da imagem da profissão
+    // Atualizar container da profissão
     const professionContainer = document.getElementById('profession-img-container');
     if (professionContainer && data.professionImage) {
-        professionContainer.innerHTML = `<img src="${data.professionImage}" alt="Profissão" class="profession-image">`;
+        const profession = professionContainer.closest('.profession-info').querySelector('.profession-overlay')?.textContent.replace('👔 ', '') || 'Profissão';
+        professionContainer.innerHTML = `
+            <img src="${data.professionImage}" alt="${profession}" class="profession-image">
+            <div class="profession-overlay">👔 ${profession}</div>
+        `;
     }
 });
 
@@ -301,25 +309,32 @@ function updateGameInfo(data) {
         window.isCurrentPlayerSpy = false;
         gameInfo.className = 'game-info';
         gameInfo.innerHTML = `
-            <div class="game-images">
+             <div class="game-images">
                 <div class="location-info">
-                    <h4>📍 Local: <strong>${data.location}</strong></h4>
                     <div class="image-placeholder" id="location-img-container">
                         ${data.locationImage ? 
-                          `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem...</div>'
+                          `<img src="${data.locationImage}" alt="${data.location}" class="location-image">
+                           <div class="location-overlay">📍 ${data.location}</div>` : 
+                          '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
                         }
                     </div>
                 </div>
                 <div class="profession-info">
-                    <h4>👔 Sua Profissão: <strong>${data.profession || 'Aguardando...'}</strong></h4>
                     <div class="image-placeholder" id="profession-img-container">
                         ${data.professionImage ? 
-                          `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem...</div>'
+                          `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">
+                           <div class="profession-overlay">👔 ${data.profession}</div>` : 
+                          '<div class="loading-placeholder">🖼️ Carregando imagem da profissão...</div>'
                         }
                     </div>
                 </div>
+            </div>
+            <p>Descubra quem é o espião fazendo perguntas!</p>
+            <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
+            <div class="locations-grid">
+                ${data.locations.map(location => 
+                    `<div class="location-item">${location}</div>`
+                ).join('')}
             </div>
         `;
     }
@@ -585,6 +600,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
