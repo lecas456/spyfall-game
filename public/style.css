@@ -734,28 +734,62 @@ button:disabled {
 /* Imagens do jogo */
 .game-images {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr; /* Local maior, profissão menor */
   gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  height: 280px; /* Altura fixa para organizar melhor */
 }
 
-.location-info, .profession-info {
-  text-align: center;
+.location-info {
+  position: relative;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
 }
 
+.profession-info {
+  position: relative;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Imagens de fundo */
 .location-image, .profession-image {
   width: 100%;
-  max-width: 200px;
-  height: 150px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-  margin-top: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  transition: transform 0.2s;
+  transition: transform 0.3s ease;
 }
 
-.location-image:hover, .profession-image:hover {
+.location-info:hover .location-image,
+.profession-info:hover .profession-image {
   transform: scale(1.05);
+}
+
+/* Overlays com texto */
+.location-overlay, .profession-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 25px;
+  font-weight: 700;
+  text-align: center;
+  font-size: 1.1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  min-width: 200px;
+}
+
+.profession-overlay {
+  font-size: 0.95rem;
+  padding: 12px 20px;
+  min-width: 150px;
 }
 
 @media (max-width: 768px) {
@@ -786,28 +820,23 @@ button:disabled {
 /* Placeholders de imagem */
 .image-placeholder {
   width: 100%;
-  min-height: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 10px;
+  height: 100%;
+  position: relative;
+  background: #f8fafc;
+  border-radius: 15px;
+  overflow: hidden;
 }
 
 .loading-placeholder {
-  background: #f3f4f6;
-  border: 2px dashed #d1d5db;
-  border-radius: 10px;
-  padding: 20px;
-  color: #6b7280;
-  font-style: italic;
   width: 100%;
-  max-width: 200px;
-  height: 150px;
+  height: 100%;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
+  color: #6b7280;
+  border-radius: 15px;
 }
 
 /* Imagens do jogo */
@@ -846,3 +875,35 @@ button:disabled {
     height: 130px;
   }
 }
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .game-images {
+    grid-template-columns: 1fr; /* Stack vertical no mobile */
+    height: auto;
+    gap: 15px;
+  }
+  
+  .location-info, .profession-info {
+    height: 200px;
+  }
+  
+  .location-overlay, .profession-overlay {
+    font-size: 1rem;
+    padding: 12px 20px;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .location-info, .profession-info {
+    height: 150px;
+  }
+  
+  .location-overlay, .profession-overlay {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+    min-width: 120px;
+  }
+}
+
