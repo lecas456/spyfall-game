@@ -770,25 +770,26 @@ button:disabled {
 /* Overlays com texto */
 .location-overlay, .profession-overlay {
   position: absolute;
-  top: 50%;
+  top: 15px; /* ← Posicionar no topo com espaço */
   left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
+  transform: translateX(-50%); /* ← Só centralizar horizontalmente */
+  background: rgba(0, 0, 0, 0.4); /* ← Mais transparente (era 0.8) */
+  backdrop-filter: blur(8px); /* ← Menos blur */
   color: white;
-  padding: 15px 25px;
-  border-radius: 25px;
+  padding: 12px 20px; /* ← Padding um pouco menor */
+  border-radius: 20px;
   font-weight: 700;
   text-align: center;
   font-size: 1.1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* ← Borda mais sutil */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* ← Sombra mais suave */
   min-width: 200px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8); /* ← Sombra no texto para legibilidade */
 }
 
 .profession-overlay {
   font-size: 0.95rem;
-  padding: 12px 20px;
+  padding: 10px 16px; /* ← Padding menor para profissão */
   min-width: 150px;
 }
 
@@ -841,9 +842,10 @@ button:disabled {
   }
   
   .location-overlay, .profession-overlay {
+    top: 12px; /* ← Ajustar posição no mobile */
     font-size: 1rem;
-    padding: 12px 20px;
-    min-width: 150px;
+    padding: 10px 16px; /* ← Padding menor no mobile */
+    min-width: 130px;
   }
 }
 
@@ -853,9 +855,11 @@ button:disabled {
   }
   
   .location-overlay, .profession-overlay {
+    top: 10px; /* ← Posição ainda mais próxima no mobile pequeno */
     font-size: 0.9rem;
-    padding: 10px 15px;
-    min-width: 120px;
+    padding: 8px 12px; /* ← Padding ainda menor */
+    min-width: 110px;
   }
 }
+
 
