@@ -73,7 +73,7 @@ const locationsWithProfessions = {
   
   'Praia': ['Salva-vidas', 'Vendedor Ambulante', 'Instrutor de Surf', 'Barqueiro', 'Mergulhador', 'Turista', 'Massagista', 'Garçom', 'Fotógrafo', 'Segurança'],
   
-  'Casino': ['Crupiê', 'Segurança', 'Garçom', 'Gerente', 'Caixa', 'Bartender', 'Jogador', 'Valet', 'Atendente VIP', 'Contador'],
+  'Cassino': ['Crupiê', 'Segurança', 'Garçom', 'Gerente', 'Caixa', 'Bartender', 'Jogador', 'Valet', 'Atendente VIP', 'Contador'],
   
   'Cinema': ['Operador de Projeção', 'Bilheteiro', 'Pipoqueiro', 'Faxineiro', 'Gerente', 'Segurança', 'Espectador', 'Técnico de Som', 'Porteiro', 'Vendedor'],
   
@@ -1151,6 +1151,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
