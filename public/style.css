@@ -41,29 +41,6 @@ body::before {
   z-index: -1;
 }
 
-/* Partículas flutuantes mais elaboradas */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 2px, transparent 2px),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 1px, transparent 1px),
-    radial-gradient(circle at 40% 40%, rgba(255,255,255,0.06) 1.5px, transparent 1.5px);
-  background-size: 200px 200px, 150px 150px, 100px 100px;
-  animation: twinkle 8s infinite ease-in-out;
-  pointer-events: none;
-  z-index: -1;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
 @keyframes float {
   0% { transform: translateY(0) rotate(0deg); }
   100% { transform: translateY(-100vh) rotate(360deg); }
@@ -261,13 +238,8 @@ button:disabled {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr;  /* ← MUDAR AQUI */
-  grid-template-rows: auto auto auto;
-  gap: 20px;
-  grid-template-areas: 
-    "header sidebar"
-    "players sidebar"  
-    "controls notes";
+  grid-template-columns: 1fr;
+  gap: 25px;
 }
 
 .game-header {
@@ -277,7 +249,6 @@ button:disabled {
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255,255,255,0.3);
-  grid-area: header; /* ← APENAS ADICIONAR ESTA LINHA */
 }
 
 .room-info {
@@ -346,7 +317,6 @@ button:disabled {
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255,255,255,0.3);
-  grid-area: players;
 }
 
 .players-list {
@@ -356,24 +326,7 @@ button:disabled {
   margin-top: 20px;
 }
 
-.player-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: var(--primary-gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  color: white;
-  font-weight: bold;
-  margin-right: 15px;
-  flex-shrink: 0;
-}
-
 .player-card {
-  display: flex;  /* ← ADICIONAR */
-  align-items: center;  /* ← ADICIONAR */
   padding: 20px;
   border: 2px solid #e5e7eb;
   border-radius: 15px;
@@ -381,10 +334,6 @@ button:disabled {
   background: white;
   position: relative;
   overflow: hidden;
-}
-
-.player-info {  /* ← NOVA SEÇÃO */
-  flex: 1;
 }
 
 .player-card::before {
@@ -443,7 +392,6 @@ button:disabled {
   box-shadow: var(--shadow-lg);
   text-align: center;
   border: 1px solid rgba(255,255,255,0.3);
-  grid-area: controls;
 }
 
 /* Grid de locais mais organizado */
@@ -480,7 +428,6 @@ button:disabled {
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255,255,255,0.3);
-  grid-area: notes;
 }
 
 .note-input {
@@ -578,12 +525,6 @@ button:disabled {
   .game-container {
     padding: 15px;
     gap: 20px;
-    grid-template-columns: 1fr;
-    grid-template-areas: 
-      "header"
-      "players"
-      "controls"
-      "notes";
   }
   
   .players-list {
@@ -865,149 +806,6 @@ button:disabled {
 
 }
 
-/* Barra de progresso do timer */
-.timer-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.timer-progress {
-  width: 150px;
-  height: 6px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 8px;
-}
-
-.timer-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #10b981, #059669);
-  transition: width 1s linear;
-  border-radius: 3px;
-}
-
-.timer-progress-bar.warning {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-
-.timer-progress-bar.critical {
-  background: linear-gradient(90deg, #dc2626, #b91c1c);
-  animation: pulse 0.5s infinite;
-}
-
-/* Modo Escuro */
-:root[data-theme="dark"] {
-  --primary-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  --card-bg: rgba(30, 41, 59, 0.95);
-  --text-color: #e2e8f0;
-  --border-color: #475569;
-}
-
-[data-theme="dark"] body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: var(--text-color);
-}
-
-[data-theme="dark"] .card,
-[data-theme="dark"] .game-header,
-[data-theme="dark"] .players-section,
-[data-theme="dark"] .game-controls,
-[data-theme="dark"] .notes-section {
-  background: var(--card-bg);
-  border-color: var(--border-color);
-  color: var(--text-color);
-}
-
-.theme-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: none;
-  color: white;
-  cursor: pointer;
-  z-index: 1000;
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-}
-
-.theme-toggle:hover {
-  background: rgba(255,255,255,0.2);
-  transform: scale(1.1);
-}
-
-/* Feedback Visual */
-.vote-option.voted {
-  animation: voteSuccess 0.5s ease-out;
-}
-
-@keyframes voteSuccess {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); background: #10b981; }
-  100% { transform: scale(1); }
-}
-
-.timer.critical {
-  animation: criticalPulse 0.5s infinite;
-}
-
-@keyframes criticalPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); color: #ef4444; }
-}
-
-button.success-feedback {
-  animation: buttonSuccess 0.6s ease-out;
-}
-
-@keyframes buttonSuccess {
-  0% { background: var(--primary-gradient); }
-  50% { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transform: scale(1.05); }
-  100% { background: var(--primary-gradient); transform: scale(1); }
-}
-
-/* Transições de Estado */
-.game-state-transition {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: slideInUp 0.6s ease-out forwards;
-}
-
-@keyframes slideInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-out {
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: all 0.3s ease-out;
-}
-
-.fade-in {
-  opacity: 1;
-  transform: translateY(0);
-  transition: all 0.3s ease-out;
-}
-
-/* Loading melhorado */
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 /* Placeholders de imagem */
 .image-placeholder {
   width: 100%;
@@ -1019,24 +817,15 @@ button.success-feedback {
 }
 
 .loading-placeholder {
-  background: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), 
-              linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), 
-              linear-gradient(45deg, transparent 75%, #f3f4f6 75%), 
-              linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-  animation: loading 1s linear infinite;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
   color: #6b7280;
   border-radius: 15px;
-}
-
-@keyframes loading {
-  0% { background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
-  100% { background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px; }
 }
 
 /* Responsivo */
@@ -1069,5 +858,3 @@ button.success-feedback {
     min-width: 120px;
   }
 }
-
-
