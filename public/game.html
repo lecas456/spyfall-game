@@ -7,19 +7,12 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <!-- Botão de alternar tema -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
-        🌙
-    </button>
-
     <div class="game-container">
         <!-- Área de informações do jogo -->
         <div class="game-header">
             <div class="room-info">
                 <span>Sala: <strong id="room-code"></strong></span>
-                <div class="timer-container">
-                    <span id="timer">⏱️ --:--</span>
-                </div>
+                <span id="timer">⏱️ --:--</span>
             </div>
             
             <div class="game-info" id="game-info">
@@ -29,7 +22,7 @@
 
         <!-- Lista de jogadores -->
         <div class="players-section">
-            <h3>👥 Jogadores</h3>
+            <h3>Jogadores</h3>
             <div id="players-list" class="players-list">
                 <!-- Lista de jogadores será inserida aqui -->
             </div>
@@ -42,7 +35,7 @@
 
         <!-- Área de anotações -->
         <div class="notes-section">
-            <h3>📝 Suas Anotações</h3>
+            <h3>Suas Anotações</h3>
             <div id="notes-area">
                 <!-- Anotações serão inseridas aqui -->
             </div>
@@ -51,7 +44,7 @@
         <!-- Modal de votação -->
         <div id="voting-modal" class="modal">
             <div class="modal-content">
-                <h3>🗳️ Votação - Quem é o espião?</h3>
+                <h3>Votação - Quem é o espião?</h3>
                 <div id="voting-options"></div>
                 <button id="confirm-vote" disabled>Confirmar Voto</button>
             </div>
@@ -60,9 +53,9 @@
         <!-- Modal de resultado -->
         <div id="result-modal" class="modal">
             <div class="modal-content">
-                <h3>🏆 Resultado do Jogo</h3>
+                <h3>Resultado do Jogo</h3>
                 <div id="result-content"></div>
-                <button id="play-again">🎮 Jogar Novamente</button>
+                <button id="play-again">Jogar Novamente</button>
             </div>
         </div>
     </div>
