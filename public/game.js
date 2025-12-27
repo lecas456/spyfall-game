@@ -198,14 +198,19 @@ socket.on('player-left', function(data) {
     // Atualizar lista de jogadores
     updatePlayersList(data.players);
     
-    // Se você se tornou o novo dono
-    if (data.newOwner === currentPlayer) {
+    // NOVA LÓGICA: Se owner saiu, atualizar controles
+    if (data.ownerLeft) {
+        console.log('Owner saiu da sala! Agora qualquer um pode iniciar o jogo.');
+        updateGameControls(gameState);
+        showNotification(`👑 ${data.playerName} (owner) saiu - qualquer um pode iniciar o jogo agora!`, 'warning');
+    } else if (data.newOwner === currentPlayer) {
+        // Se você se tornou o novo dono (caso ainda use a lógica antiga)
         console.log('Você agora é o dono da sala!');
         updateGameControls(gameState);
+        showNotification(`Você agora é o dono da sala!`, 'info');
+    } else {
+        showNotification(`${data.playerName} saiu da sala`, 'info');
     }
-    
-    // Mostrar notificação
-    showNotification(`${data.playerName} saiu da sala`, 'info');
 });
 
 // Evento quando jogo é cancelado por falta de jogadores
@@ -294,7 +299,9 @@ function updatePlayersList(players) {
 }
 
 function updateGameInfo(data) {
+    // ADICIONAR ESTA LINHA:
     window.currentGameData = data;
+    
     window.currentGameLocations = data.locations;
     
     const gameInfo = document.getElementById('game-info');
@@ -305,6 +312,7 @@ function updateGameInfo(data) {
         gameInfo.innerHTML = `
             <h4>🕵️ Você é o ESPIÃO!</h4>
             <p>Descubra qual é o local sem se entregar!</p>
+            ${data.firstQuestionPlayer ? getFirstQuestionDisplay(data.firstQuestionPlayer) : ''}
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
             <div class="locations-grid">
                 ${data.locations.map(location => 
@@ -321,7 +329,7 @@ function updateGameInfo(data) {
                     <div class="image-placeholder" id="location-img-container">
                         ${data.locationImage ? 
                           `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
-                          '<div class="loading-placeholder"></div>'
+                          '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
                         }
                         <div class="location-overlay">📍 ${data.location}</div>
                     </div>
@@ -330,13 +338,14 @@ function updateGameInfo(data) {
                     <div class="image-placeholder" id="profession-img-container">
                         ${data.professionImage ? 
                           `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : 
-                          '<div class="loading-placeholder"></div>'
+                          '<div class="loading-placeholder">🖼️ Carregando imagem da profissão...</div>'
                         }
                         <div class="profession-overlay">👔 ${data.profession}</div>
                     </div>
                 </div>
             </div>
             <p>Descubra quem é o espião fazendo perguntas!</p>
+            ${data.firstQuestionPlayer ? getFirstQuestionDisplay(data.firstQuestionPlayer) : ''}
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
             <div class="locations-grid">
                 ${data.locations.map(location => 
@@ -350,39 +359,56 @@ function updateGameInfo(data) {
 function updateGameControls(state) {
     const gameControls = document.getElementById('game-controls');
     
-    if (state === 'waiting') {
-        // Verificar se é o dono da sala
-        const players = currentRoom?.players || [];
-        const currentPlayerData = players.find(p => p.id === currentPlayer);
-        const isOwner = currentPlayerData?.isOwner || false;
-        
-        if (isOwner) {
-            gameControls.innerHTML = `
-                <button onclick="startGame()">🎮 Iniciar Jogo</button>
-                <p>Mínimo 3 jogadores para começar</p>
-            `;
-        } else {
-            gameControls.innerHTML = `
-                <p>⏳ Aguardando o dono da sala iniciar o jogo...</p>
-            `;
-        }
-    } else if (state === 'playing') {
-        // Verificar se o jogador atual é espião
-        const isCurrentPlayerSpy = gameState === 'playing' && 
-                                  document.querySelector('.spy-info') !== null;
+    // Animação de saída
+    gameControls.classList.add('fade-out');
     
-        if (isCurrentPlayerSpy) {
-            // Só botão de chutar para o espião
-            gameControls.innerHTML = `
-                <button onclick="showSpyGuessModal()" id="spy-guess-btn">🎯 Chutar Local</button>
-            `;
-        } else {
-            // Só botão de votação para não-espiões
-            gameControls.innerHTML = `
-                <button onclick="startVoting()" id="vote-btn">🗳️ Ir para Votação</button>
-            `;
+    setTimeout(() => {
+        if (state === 'waiting') {
+            // NOVA LÓGICA: Verificar se há owner na sala
+            const players = currentRoom?.players || [];
+            const currentPlayerData = players.find(p => p.id === currentPlayer);
+            const isOwner = currentPlayerData?.isOwner || false;
+            const hasOwner = players.some(p => p.isOwner);
+            
+            if (isOwner || !hasOwner) {
+                // É owner OU não há owner - pode iniciar
+                const buttonText = hasOwner ? '🎮 Iniciar Jogo' : '🚀 Iniciar Jogo (Sem Owner)';
+                gameControls.innerHTML = `
+                    <button onclick="startGame()">${buttonText}</button>
+                    <p>Mínimo 3 jogadores para começar</p>
+                    ${!hasOwner ? '<p style="color: #f59e0b; font-size: 0.9rem;">⚠️ Owner saiu - qualquer um pode iniciar</p>' : ''}
+                `;
+            } else {
+                // Não é owner e existe owner - aguardar
+                gameControls.innerHTML = `
+                    <p>⏳ Aguardando o dono da sala iniciar o jogo...</p>
+                `;
+            }
+        } else if (state === 'playing') {
+            // Verificar se o jogador atual é espião
+            const isCurrentPlayerSpy = gameState === 'playing' && 
+                                      document.querySelector('.spy-info') !== null;
+        
+            if (isCurrentPlayerSpy) {
+                // Só botão de chutar para o espião
+                gameControls.innerHTML = `
+                    <button onclick="showSpyGuessModal()" id="spy-guess-btn">🎯 Chutar Local</button>
+                `;
+            } else {
+                // Só botão de votação para não-espiões
+                gameControls.innerHTML = `
+                    <button onclick="startVoting()" id="vote-btn">🗳️ Ir para Votação</button>
+                `;
+            }
         }
-    }
+        
+        gameControls.classList.remove('fade-out');
+        gameControls.classList.add('fade-in', 'game-state-transition');
+        
+        setTimeout(() => {
+            gameControls.classList.remove('game-state-transition');
+        }, 600);
+    }, 300);
 }
 
 function updateTimer(timeRemaining) {
@@ -590,6 +616,22 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
+function getFirstQuestionDisplay(firstQuestionPlayerId) {
+    const players = currentRoom?.players || [];
+    const firstPlayer = players.find(p => p.id === firstQuestionPlayerId);
+    const isMe = firstQuestionPlayerId === currentPlayer;
+    
+    if (isMe) {
+        return `<div style="background: #10b981; color: white; padding: 10px 15px; border-radius: 8px; margin: 10px 0; text-align: center; font-weight: bold;">
+            🎯 É SUA VEZ! Faça a primeira pergunta
+        </div>`;
+    } else {
+        return `<div style="background: #3b82f6; color: white; padding: 10px 15px; border-radius: 8px; margin: 10px 0; text-align: center;">
+            🎤 <strong>${firstPlayer?.name || 'Jogador'}</strong> fará a primeira pergunta
+        </div>`;
+    }
+}
+
 // Funções de cookie
 function setCookie(name, value, days) {
     const expires = new Date();
@@ -607,6 +649,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
