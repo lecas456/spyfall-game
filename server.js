@@ -479,8 +479,7 @@ class Room {
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
     
     // NOVA FUNCIONALIDADE: Definir quem faz a primeira pergunta (não pode ser o espião)
-    const nonSpyPlayers = playerIds.filter(id => id !== this.spy);
-    this.firstQuestionPlayer = nonSpyPlayers[Math.floor(Math.random() * nonSpyPlayers.length)];
+    this.firstQuestionPlayer = playerIds[Math.floor(Math.random() * playerIds.length)];
     this.currentPlayer = this.firstQuestionPlayer;
     
     console.log(`🎯 Primeira pergunta será feita por: ${this.players.get(this.firstQuestionPlayer).name}`);
@@ -1152,6 +1151,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
