@@ -7,43 +7,83 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Botão de alternar tema -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+        🌙
+    </button>
+
     <div class="container">
-        <h1>🕵️🏔️ Espião da Serra</h1>
+        <h1>🕵️ Espião da Serra</h1>
         
         <div class="card">
-            <h2>Criar Nova Sala</h2>
+            <h2>🎮 Criar Nova Sala</h2>
             <form id="create-room-form">
                 <input type="text" id="player-name" placeholder="Seu nome" required>
                 <select id="time-limit">
-                    <option value="180">3 minutos</option>
-                    <option value="300" selected>5 minutos</option>
-                    <option value="420">7 minutos</option>
-                    <option value="600">10 minutos</option>
-                    <option value="900">15 minutos</option>
+                    <option value="180">⏱️ 3 minutos</option>
+                    <option value="300" selected>⏱️ 5 minutos</option>
+                    <option value="420">⏱️ 7 minutos</option>
+                    <option value="600">⏱️ 10 minutos</option>
+                    <option value="900">⏱️ 15 minutos</option>
                 </select>
 
-		<select id="locations-count">
-            	    <option value="20">20 locais (Muito Fácil)</option>
-            	    <option value="30">30 locais (Fácil)</option>
-            	    <option value="50" selected>50 locais (Médio)</option>
-            	    <option value="80">80 locais (Difícil)</option>
-            	    <option value="136">136 locais (Muito Difícil)</option>
-        	</select>			
+                <select id="locations-count">
+                    <option value="20">🎯 20 locais (Muito Fácil)</option>
+                    <option value="30">🎯 30 locais (Fácil)</option>
+                    <option value="50" selected>🎯 50 locais (Médio)</option>
+                    <option value="80">🎯 80 locais (Difícil)</option>
+                    <option value="136">🎯 136 locais (Muito Difícil)</option>
+                </select>
 
-                <button type="submit">Criar Sala</button>
+                <button type="submit">✨ Criar Sala</button>
             </form>
         </div>
 
         <div class="card">
-            <h2>Entrar em Sala</h2>
+            <h2>🚪 Entrar em Sala</h2>
             <form id="join-room-form">
                 <input type="text" id="join-name" placeholder="Seu nome" required>
                 <input type="text" id="room-code" placeholder="Código da sala" required>
-                <button type="submit">Entrar</button>
+                <button type="submit">🎯 Entrar</button>
             </form>
+        </div>
+
+        <div class="subtitle">
+            <p>🎮 O jogo de dedução social mais divertido!</p>
+            <div class="brand-tag">
+                ⭐ Criado especialmente para a Serra Gaúcha
+            </div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- Adicionar script para tema também na página inicial -->
+    <script>
+        function toggleTheme() {
+            const root = document.documentElement;
+            const currentTheme = root.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            root.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            const toggleBtn = document.querySelector('.theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        // Carregar tema salvo ao inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            const toggleBtn = document.querySelector('.theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+            }
+        });
+    </script>
 </body>
 </html>
