@@ -244,24 +244,30 @@ socket.on('room-deleted', function(data) {
 socket.on('images-loaded', function(data) {
     console.log('Imagens carregadas:', data);
     
-    // Atualizar container da imagem do local
+    // Atualizar apenas a imagem do local (o overlay já está correto)
     const locationContainer = document.getElementById('location-img-container');
     if (locationContainer && data.locationImage) {
-        const location = locationContainer.closest('.location-info').querySelector('.location-overlay')?.textContent.replace('📍 ', '') || 'Local';
+        const existingOverlay = locationContainer.querySelector('.location-overlay');
         locationContainer.innerHTML = `
-            <img src="${data.locationImage}" alt="${location}" class="location-image">
-            <div class="location-overlay">📍 ${location}</div>
+            <img src="${data.locationImage}" alt="${window.currentGameData.location}" class="location-image">
         `;
+        // Re-adicionar o overlay existente
+        if (existingOverlay) {
+            locationContainer.appendChild(existingOverlay);
+        }
     }
     
-    // Atualizar container da profissão
+    // Atualizar apenas a imagem da profissão (o overlay já está correto)
     const professionContainer = document.getElementById('profession-img-container');
     if (professionContainer && data.professionImage) {
-        const profession = professionContainer.closest('.profession-info').querySelector('.profession-overlay')?.textContent.replace('👔 ', '') || 'Profissão';
+        const existingOverlay = professionContainer.querySelector('.profession-overlay');
         professionContainer.innerHTML = `
-            <img src="${data.professionImage}" alt="${profession}" class="profession-image">
-            <div class="profession-overlay">👔 ${profession}</div>
+            <img src="${data.professionImage}" alt="${window.currentGameData.profession}" class="profession-image">
         `;
+        // Re-adicionar o overlay existente
+        if (existingOverlay) {
+            professionContainer.appendChild(existingOverlay);
+        }
     }
 });
 
@@ -288,6 +294,7 @@ function updatePlayersList(players) {
 }
 
 function updateGameInfo(data) {
+    window.currentGameData = data;
     window.currentGameLocations = data.locations;
     
     const gameInfo = document.getElementById('game-info');
@@ -313,19 +320,19 @@ function updateGameInfo(data) {
                 <div class="location-info">
                     <div class="image-placeholder" id="location-img-container">
                         ${data.locationImage ? 
-                          `<img src="${data.locationImage}" alt="${data.location}" class="location-image">
-                           <div class="location-overlay">📍 ${data.location}</div>` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
+                          `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
+                          '<div class="loading-placeholder"></div>'
                         }
+                        <div class="location-overlay">📍 ${data.location}</div>
                     </div>
                 </div>
                 <div class="profession-info">
                     <div class="image-placeholder" id="profession-img-container">
                         ${data.professionImage ? 
-                          `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">
-                           <div class="profession-overlay">👔 ${data.profession}</div>` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem da profissão...</div>'
+                          `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : 
+                          '<div class="loading-placeholder"></div>'
                         }
+                        <div class="profession-overlay">👔 ${data.profession}</div>
                     </div>
                 </div>
             </div>
@@ -600,6 +607,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
