@@ -8,17 +8,26 @@
 </head>
 <body>
     <div class="container">
-        <h1>🕵️🏔️ Espião da Serra</h1>
-        
+        <h1>🕵️ Espião da Serra</h1>
+
+		<div class="card">
+            <h2>Entrar em Sala</h2>
+            <form id="join-room-form">
+                <input type="text" id="join-name" placeholder="Seu nome" required>
+                <input type="text" id="room-code" placeholder="Código da sala" required>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+		
         <div class="card">
             <h2>Criar Nova Sala</h2>
             <form id="create-room-form">
                 <input type="text" id="player-name" placeholder="Seu nome" required>
                 <select id="time-limit">
                     <option value="180">3 minutos</option>
-                    <option value="300" selected>5 minutos</option>
+                    <option value="300">5 minutos</option>
                     <option value="420">7 minutos</option>
-                    <option value="600">10 minutos</option>
+                    <option value="600" selected>10 minutos</option>
                     <option value="900">15 minutos</option>
                 </select>
 
@@ -34,16 +43,9 @@
             </form>
         </div>
 
-        <div class="card">
-            <h2>Entrar em Sala</h2>
-            <form id="join-room-form">
-                <input type="text" id="join-name" placeholder="Seu nome" required>
-                <input type="text" id="room-code" placeholder="Código da sala" required>
-                <button type="submit">Entrar</button>
-            </form>
-        </div>
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
+
