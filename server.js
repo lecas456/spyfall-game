@@ -470,19 +470,25 @@ class Room {
     // SORTEAR PROFISSÕES
     const locationProfessions = locationsWithProfessions[this.location];
     playerIds.forEach(playerId => {
-      if (playerId !== this.spy) {
-        const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
-        this.playerProfessions.set(playerId, randomProfession);
-      }
+        if (playerId !== this.spy) {
+            const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
+            this.playerProfessions.set(playerId, randomProfession);
+        }
     });
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
-    this.currentPlayer = this.playerOrder[Math.floor(Math.random() * this.playerOrder.length)];
+    
+    // NOVA FUNCIONALIDADE: Definir quem faz a primeira pergunta (não pode ser o espião)
+    const nonSpyPlayers = playerIds.filter(id => id !== this.spy);
+    this.firstQuestionPlayer = nonSpyPlayers[Math.floor(Math.random() * nonSpyPlayers.length)];
+    this.currentPlayer = this.firstQuestionPlayer;
+    
+    console.log(`🎯 Primeira pergunta será feita por: ${this.players.get(this.firstQuestionPlayer).name}`);
     
     this.timeRemaining = this.timeLimit;
     this.startTimer();
     
-    // BUSCAR IMAGENS EM BACKGROUND (não bloquear o jogo)
+    // BUSCAR IMAGENS EM BACKGROUND
     this.loadImagesFromSupabase();
     
     return true;
@@ -889,71 +895,78 @@ io.on('connection', (socket) => {
     const roomCode = socket.roomCode;
     const room = activeRooms.get(roomCode);
     
-    if (!room || !room.players.get(socket.playerId)?.isOwner) {
-      return;
+    // NOVA LÓGICA: Qualquer jogador pode iniciar se não há owner, OU se é o owner
+    const player = room?.players.get(socket.playerId);
+    const canStartGame = room && player && (player.isOwner || room.owner === null);
+    
+    if (!canStartGame) {
+        console.log(`Jogador ${player?.name} tentou iniciar jogo sem permissão`);
+        return;
     }
 
     try {
-      const gameStarted = await room.startGame();
-      if (gameStarted) {
-        room.players.forEach((player) => {
-          const playerSocket = io.sockets.sockets.get(player.socketId);
-          if (playerSocket) {
-            playerSocket.playerId = player.id;
-            playerSocket.roomCode = roomCode;
-            
-            if (player.id === room.spy) {
-              playerSocket.emit('game-started', {
-                isSpy: true,
-                locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-                currentPlayer: room.currentPlayer,
-                playerOrder: room.playerOrder,
-                timeRemaining: room.timeRemaining
-              });
-            } else {
-              playerSocket.emit('game-started', {
-                isSpy: false,
-                location: room.location,
-                profession: room.playerProfessions.get(player.id),
-                locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-                currentPlayer: room.currentPlayer,
-                playerOrder: room.playerOrder,
-                timeRemaining: room.timeRemaining
-              });
-            }
-          }
-        });
+        const gameStarted = await room.startGame();
+        if (gameStarted) {
+            room.players.forEach((player) => {
+                const playerSocket = io.sockets.sockets.get(player.socketId);
+                if (playerSocket) {
+                    playerSocket.playerId = player.id;
+                    playerSocket.roomCode = roomCode;
+                    
+                    if (player.id === room.spy) {
+                        playerSocket.emit('game-started', {
+                            isSpy: true,
+                            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+                            currentPlayer: room.currentPlayer,
+                            firstQuestionPlayer: room.firstQuestionPlayer, // NOVA PROPRIEDADE
+                            playerOrder: room.playerOrder,
+                            timeRemaining: room.timeRemaining
+                        });
+                    } else {
+                        playerSocket.emit('game-started', {
+                            isSpy: false,
+                            location: room.location,
+                            profession: room.playerProfessions.get(player.id),
+                            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+                            currentPlayer: room.currentPlayer,
+                            firstQuestionPlayer: room.firstQuestionPlayer, // NOVA PROPRIEDADE
+                            playerOrder: room.playerOrder,
+                            timeRemaining: room.timeRemaining
+                        });
+                    }
+                }
+            });
 
-        // Timer code continua igual...
-        const timerInterval = setInterval(() => {
-          if (room.gameState !== 'playing') {
-            clearInterval(timerInterval);
-            return;
-          }
-      
-          io.to(roomCode).emit('timer-update', {
-            timeRemaining: room.timeRemaining
-          });
-          
-          if (room.timeRemaining <= 0) {
-            clearInterval(timerInterval);
-            console.log(`⏰ Tempo esgotado na sala ${roomCode}, iniciando votação`);
-            if (room.startVoting()) {
-              io.to(roomCode).emit('voting-started', {
-                players: Array.from(room.players.values()).map(p => ({
-                  id: p.id,
-                  name: p.name
-                }))
-              });
-            }
-          }
-        }, 1000);
-      }
+            // Timer code continua igual...
+            const timerInterval = setInterval(() => {
+                if (room.gameState !== 'playing') {
+                    clearInterval(timerInterval);
+                    return;
+                }
+            
+                io.to(roomCode).emit('timer-update', {
+                    timeRemaining: room.timeRemaining
+                });
+                
+                if (room.timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    console.log(`⏰ Tempo esgotado na sala ${roomCode}, iniciando votação`);
+                    if (room.startVoting()) {
+                        io.to(roomCode).emit('voting-started', {
+                            players: Array.from(room.players.values()).map(p => ({
+                                id: p.id,
+                                name: p.name
+                            }))
+                        });
+                    }
+                }
+            }, 1000);
+        }
     } catch (error) {
-      console.error('Erro ao iniciar jogo:', error);
-      socket.emit('error', { message: 'Erro ao iniciar jogo' });
+        console.error('Erro ao iniciar jogo:', error);
+        socket.emit('error', { message: 'Erro ao iniciar jogo' });
     }
-  });
+});
 
   socket.on('start-voting', () => {
     console.log('Recebido start-voting de:', socket.playerId);
@@ -1069,65 +1082,69 @@ io.on('connection', (socket) => {
     const playerId = socket.playerId;
     
     if (roomCode && playerId) {
-      const room = activeRooms.get(roomCode);
-      
-      if (room) {
-        if (room.players.has(playerId)) {
-          const player = room.players.get(playerId);
-          const wasOwner = player.isOwner;
-          room.removePlayer(playerId);
-          
-          // Se ainda tem jogadores na sala
-          if (room.players.size > 0) {
-            // Cancelar deleção se estava agendada
-            room.cancelDelete();
-            
-            // Se o dono saiu, fazer o próximo jogador virar dono
-            if (wasOwner) {
-              const newOwner = Array.from(room.players.values())[0];
-              newOwner.isOwner = true;
-              room.owner = newOwner.id;
-            }
-            
-            // Notificar outros jogadores sobre a saída
-            const updatedPlayers = Array.from(room.players.values()).map(p => ({
-              id: p.id,
-              name: p.name,
-              isOwner: p.isOwner,
-              score: p.score
-            }));
-            
-            io.to(roomCode).emit('player-left', {
-              playerId: playerId,
-              playerName: player.name,
-              players: updatedPlayers,
-              newOwner: wasOwner ? Array.from(room.players.values())[0]?.id : null
-            });
-            
-            // Se estava jogando e agora tem menos de 3 jogadores, cancelar jogo
-            if (room.gameState === 'playing' && room.players.size < 3) {
-              room.resetGame();
-              room.players.forEach((p) => {
-                const playerSocket = io.sockets.sockets.get(p.socketId);
-                if (playerSocket) {
-                  playerSocket.emit('game-cancelled', {
-                    message: 'Jogo cancelado - poucos jogadores',
-                    players: updatedPlayers,
-                    gameState: 'waiting'
-                  });
+        const room = activeRooms.get(roomCode);
+        
+        if (room) {
+            if (room.players.has(playerId)) {
+                const player = room.players.get(playerId);
+                const wasOwner = player.isOwner;
+                room.removePlayer(playerId);
+                
+                // Se ainda tem jogadores na sala
+                if (room.players.size > 0) {
+                    // Cancelar deleção se estava agendada
+                    room.cancelDelete();
+                    
+                    // NOVA LÓGICA: Se o dono saiu, remover ownership de todos
+                    if (wasOwner) {
+                        // Remover ownership de todos os jogadores
+                        room.players.forEach(p => {
+                            p.isOwner = false;
+                        });
+                        room.owner = null; // Não há mais owner
+                        console.log(`Owner saiu da sala ${roomCode}, agora qualquer um pode iniciar o jogo`);
+                    }
+                    
+                    // Notificar outros jogadores sobre a saída
+                    const updatedPlayers = Array.from(room.players.values()).map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        isOwner: p.isOwner, // Todos serão false se owner saiu
+                        score: p.score
+                    }));
+                    
+                    io.to(roomCode).emit('player-left', {
+                        playerId: playerId,
+                        playerName: player.name,
+                        players: updatedPlayers,
+                        ownerLeft: wasOwner, // NOVA PROPRIEDADE
+                        newOwner: null // Não há novo owner
+                    });
+                    
+                    // Se estava jogando e agora tem menos de 3 jogadores, cancelar jogo
+                    if (room.gameState === 'playing' && room.players.size < 3) {
+                        room.resetGame();
+                        room.players.forEach((p) => {
+                            const playerSocket = io.sockets.sockets.get(p.socketId);
+                            if (playerSocket) {
+                                playerSocket.emit('game-cancelled', {
+                                    message: 'Jogo cancelado - poucos jogadores',
+                                    players: updatedPlayers,
+                                    gameState: 'waiting'
+                                });
+                            }
+                        });
+                    }
+                    
+                } else {
+                    // Sala vazia - AGENDAR deleção em 30 segundos
+                    console.log(`Sala ${roomCode} ficou vazia, agendando deleção em 30 segundos`);
+                    room.scheduleDelete();
                 }
-              });
             }
-            
-          } else {
-            // Sala vazia - AGENDAR deleção em 30 segundos ao invés de deletar imediatamente
-            console.log(`Sala ${roomCode} ficou vazia, agendando deleção em 30 segundos`);
-            room.scheduleDelete();
-          }
         }
-      }
     }
-  });
+});
 
 }); // <-- ESTA chave fecha o io.on('connection')
 
@@ -1135,6 +1152,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
