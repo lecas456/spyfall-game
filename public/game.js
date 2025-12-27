@@ -7,8 +7,6 @@ let gameState = 'waiting';
 let playerNotes = {};
 let selectedVote = null;
 
-window.currentGameData = null;
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado');
     
@@ -286,15 +284,9 @@ function updatePlayersList(players) {
             playerDiv.classList.add('owner');
         }
         
-        // Gerar avatar com primeira letra do nome
-        const avatarLetter = player.name.charAt(0).toUpperCase();
-        
         playerDiv.innerHTML = `
-            <div class="player-avatar">${avatarLetter}</div>
-            <div class="player-info">
-                <div class="player-name">${player.name} ${player.isOwner ? '👑' : ''}</div>
-                <div class="player-score">Pontos: ${player.score}</div>
-            </div>
+            <div class="player-name">${player.name} ${player.isOwner ? '👑' : ''}</div>
+            <div class="player-score">Pontos: ${player.score}</div>
         `;
         
         playersList.appendChild(playerDiv);
@@ -358,51 +350,39 @@ function updateGameInfo(data) {
 function updateGameControls(state) {
     const gameControls = document.getElementById('game-controls');
     
-    // Animação de saída
-    gameControls.classList.add('fade-out');
-    
-    setTimeout(() => {
-        if (state === 'waiting') {
-            // Verificar se é o dono da sala
-            const players = currentRoom?.players || [];
-            const currentPlayerData = players.find(p => p.id === currentPlayer);
-            const isOwner = currentPlayerData?.isOwner || false;
-            
-            if (isOwner) {
-                gameControls.innerHTML = `
-                    <button onclick="startGame()">🎮 Iniciar Jogo</button>
-                    <p>Mínimo 3 jogadores para começar</p>
-                `;
-            } else {
-                gameControls.innerHTML = `
-                    <p>⏳ Aguardando o dono da sala iniciar o jogo...</p>
-                `;
-            }
-        } else if (state === 'playing') {
-            // Verificar se o jogador atual é espião
-            const isCurrentPlayerSpy = gameState === 'playing' && 
-                                      document.querySelector('.spy-info') !== null;
+    if (state === 'waiting') {
+        // Verificar se é o dono da sala
+        const players = currentRoom?.players || [];
+        const currentPlayerData = players.find(p => p.id === currentPlayer);
+        const isOwner = currentPlayerData?.isOwner || false;
         
-            if (isCurrentPlayerSpy) {
-                // Só botão de chutar para o espião
-                gameControls.innerHTML = `
-                    <button onclick="showSpyGuessModal()" id="spy-guess-btn">🎯 Chutar Local</button>
-                `;
-            } else {
-                // Só botão de votação para não-espiões
-                gameControls.innerHTML = `
-                    <button onclick="startVoting()" id="vote-btn">🗳️ Ir para Votação</button>
-                `;
-            }
+        if (isOwner) {
+            gameControls.innerHTML = `
+                <button onclick="startGame()">🎮 Iniciar Jogo</button>
+                <p>Mínimo 3 jogadores para começar</p>
+            `;
+        } else {
+            gameControls.innerHTML = `
+                <p>⏳ Aguardando o dono da sala iniciar o jogo...</p>
+            `;
         }
-        
-        gameControls.classList.remove('fade-out');
-        gameControls.classList.add('fade-in', 'game-state-transition');
-        
-        setTimeout(() => {
-            gameControls.classList.remove('game-state-transition');
-        }, 600);
-    }, 300);
+    } else if (state === 'playing') {
+        // Verificar se o jogador atual é espião
+        const isCurrentPlayerSpy = gameState === 'playing' && 
+                                  document.querySelector('.spy-info') !== null;
+    
+        if (isCurrentPlayerSpy) {
+            // Só botão de chutar para o espião
+            gameControls.innerHTML = `
+                <button onclick="showSpyGuessModal()" id="spy-guess-btn">🎯 Chutar Local</button>
+            `;
+        } else {
+            // Só botão de votação para não-espiões
+            gameControls.innerHTML = `
+                <button onclick="startVoting()" id="vote-btn">🗳️ Ir para Votação</button>
+            `;
+        }
+    }
 }
 
 function updateTimer(timeRemaining) {
@@ -412,32 +392,6 @@ function updateTimer(timeRemaining) {
     
     timer.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
     timer.className = timeRemaining <= 30 ? 'timer warning' : 'timer';
-    
-    // Adicionar barra de progresso
-    let progressBar = document.querySelector('.timer-progress-bar');
-    if (!progressBar) {
-        const container = timer.parentElement;
-        const progressContainer = document.createElement('div');
-        progressContainer.className = 'timer-progress';
-        progressContainer.innerHTML = '<div class="timer-progress-bar"></div>';
-        container.appendChild(progressContainer);
-        progressBar = progressContainer.querySelector('.timer-progress-bar');
-    }
-    
-    const totalTime = currentRoom?.timeLimit || 300;
-    const progressPercent = (timeRemaining / totalTime) * 100;
-    progressBar.style.width = progressPercent + '%';
-    
-    if (timeRemaining <= 10) {
-        progressBar.className = 'timer-progress-bar critical';
-        timer.className = 'timer critical';
-    } else if (timeRemaining <= 30) {
-        progressBar.className = 'timer-progress-bar warning';
-        timer.className = 'timer warning';
-    } else {
-        progressBar.className = 'timer-progress-bar';
-        timer.className = 'timer';
-    }
 }
 
 function createNotesArea(players) {
@@ -636,84 +590,6 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-function toggleTheme() {
-    const root = document.documentElement;
-    const currentTheme = root.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    root.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    
-    const toggleBtn = document.querySelector('.theme-toggle');
-    if (toggleBtn) {
-        toggleBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-    }
-}
-
-// Modificar o DOMContentLoaded existente para incluir o tema
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM carregado');
-    
-    // Carregar tema salvo
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    // Esconder modais inicialmente
-    document.getElementById('voting-modal').style.display = 'none';
-    document.getElementById('result-modal').style.display = 'none';
-    
-    // resto da função continua igual...
-    const path = window.location.pathname;
-    const roomCode = path.split('/')[2];
-    console.log('Código da sala:', roomCode);
-    
-    if (!roomCode) {
-        window.location.href = '/';
-        return;
-    }
-
-    document.getElementById('room-code').textContent = roomCode;
-
-    const playerId = getCookie('playerId');
-    const playerCode = getCookie('playerCode');
-    const playerName = getCookie('playerName');
-
-    console.log('Dados salvos:', { playerId, playerCode, playerName });
-
-    if (!playerName) {
-        const name = prompt('Digite seu nome:');
-        if (!name) {
-            window.location.href = '/';
-            return;
-        }
-        setCookie('playerName', name, 1);
-        joinRoom(roomCode, name);
-    } else {
-        joinRoom(roomCode, playerName, playerId, playerCode);
-    }
-});
-
-function addButtonFeedback(buttonElement) {
-    buttonElement.classList.add('success-feedback');
-    setTimeout(() => {
-        buttonElement.classList.remove('success-feedback');
-    }, 600);
-}
-
-// Modificar a função selectVote para adicionar feedback
-function selectVote(playerId, element) {
-    document.querySelectorAll('.vote-option').forEach(opt => {
-        opt.classList.remove('selected');
-    });
-    element.classList.add('selected', 'voted');
-    selectedVote = playerId;
-    document.getElementById('confirm-vote').disabled = false;
-    
-    setTimeout(() => {
-        element.classList.remove('voted');
-    }, 500);
-}
-
 // Funções de cookie
 function setCookie(name, value, days) {
     const expires = new Date();
@@ -731,8 +607,6 @@ function getCookie(name) {
     }
     return null;
 }
-
-
 
 
 
