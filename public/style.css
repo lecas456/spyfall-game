@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --dark-gradient: linear-gradient(135deg, #232526 0%, #414345 100%);
+  --primary-gradient: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
+  --secondary-gradient: linear-gradient(135deg, #0f172a 0%, #374151 100%);
+  --dark-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
@@ -288,7 +288,7 @@ button:disabled {
   padding: 20px;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   border-radius: 15px;
-  border-left: 5px solid #3b82f6;
+  border-left: 5px solid #1e40af;
   position: relative;
   overflow: hidden;
 }
@@ -300,7 +300,7 @@ button:disabled {
   right: 0;
   width: 100px;
   height: 100px;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="rgba(59,130,246,0.05)" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>') no-repeat;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="rgba(30,64,175,0.05)" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>') no-repeat;
   opacity: 0.3;
 }
 
@@ -858,3 +858,4 @@ button:disabled {
     min-width: 120px;
   }
 }
+
