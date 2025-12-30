@@ -6,6 +6,8 @@ let currentPlayer = null;
 let gameState = 'waiting';
 let playerNotes = {};
 let selectedVote = null;
+let eliminatedLocations = new Set(); // Para o espião eliminar locais
+let votingConfirmationActive = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado');
@@ -244,6 +246,31 @@ socket.on('room-deleted', function(data) {
     window.location.href = '/';
 });
 
+// Evento de confirmação de votação
+socket.on('voting-confirmation-started', function(data) {
+    console.log('Confirmação de votação iniciada por:', data.initiator);
+    votingConfirmationActive = true;
+    showVotingConfirmationModal(data.initiator, data.timeLimit);
+});
+
+socket.on('voting-confirmation-update', function(data) {
+    console.log('Update confirmação:', data);
+    updateVotingConfirmationModal(data.voted, data.total);
+});
+
+socket.on('voting-confirmation-result', function(data) {
+    console.log('Resultado confirmação:', data);
+    closeVotingConfirmationModal();
+    votingConfirmationActive = false;
+    
+    if (data.approved) {
+        showNotification(`✅ Votação aprovada! (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'success');
+        // A votação real será aberta pelo evento 'voting-started' que vem em seguida
+    } else {
+        showNotification(`❌ Votação rejeitada (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'warning');
+    }
+});
+
 // Adicionar após os outros eventos socket
 // Evento quando imagens são carregadas
 socket.on('images-loaded', function(data) {
@@ -314,36 +341,51 @@ function updateGameInfo(data) {
             <p>Descubra qual é o local sem se entregar!</p>
             ${data.firstQuestionPlayer ? getFirstQuestionDisplay(data.firstQuestionPlayer) : ''}
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
-            <div class="locations-grid">
+            <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 15px;">💡 Clique nos locais para eliminá-los (só você vê)</p>
+            <div class="locations-grid spy-locations-grid">
                 ${data.locations.map(location => 
-                    `<div class="location-item">${location}</div>`
+                    `<button class="location-item spy-location-btn" data-location="${location}" onclick="toggleLocationElimination('${location}')">${location}</button>`
                 ).join('')}
             </div>
         `;
     } else {
         window.isCurrentPlayerSpy = false;
         gameInfo.className = 'game-info';
+        
+        // Condicional para mostrar ou não as imagens/profissões
+        let imagesSection = '';
+        if (data.hasProfessions) {
+            imagesSection = `
+                <div class="game-images">
+                    <div class="location-info">
+                        <div class="image-placeholder" id="location-img-container">
+                            ${data.locationImage ? 
+                              `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
+                              '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
+                            }
+                            <div class="location-overlay">📍 ${data.location}</div>
+                        </div>
+                    </div>
+                    <div class="profession-info">
+                        <div class="image-placeholder" id="profession-img-container">
+                            ${data.professionImage ? 
+                              `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : 
+                              '<div class="loading-placeholder">🖼️ Carregando imagem da profissão...</div>'
+                            }
+                            <div class="profession-overlay">👔 ${data.profession}</div>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            imagesSection = `
+                <div style="text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                    <h3 style="margin: 0; font-size: 1.5rem;">📍 ${data.location}</h3>
+                    <p style="margin: 5px 0 0 0; opacity: 0.9;">Seu local secreto</p>
+                </div>`;
+        }
+        
         gameInfo.innerHTML = `
-             <div class="game-images">
-                <div class="location-info">
-                    <div class="image-placeholder" id="location-img-container">
-                        ${data.locationImage ? 
-                          `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
-                        }
-                        <div class="location-overlay">📍 ${data.location}</div>
-                    </div>
-                </div>
-                <div class="profession-info">
-                    <div class="image-placeholder" id="profession-img-container">
-                        ${data.professionImage ? 
-                          `<img src="${data.professionImage}" alt="${data.profession}" class="profession-image">` : 
-                          '<div class="loading-placeholder">🖼️ Carregando imagem da profissão...</div>'
-                        }
-                        <div class="profession-overlay">👔 ${data.profession}</div>
-                    </div>
-                </div>
-            </div>
+            ${imagesSection}
             <p>Descubra quem é o espião fazendo perguntas!</p>
             ${data.firstQuestionPlayer ? getFirstQuestionDisplay(data.firstQuestionPlayer) : ''}
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
@@ -354,6 +396,142 @@ function updateGameInfo(data) {
             </div>
         `;
     }
+}
+
+function toggleLocationElimination(location) {
+    console.log('Toggle eliminação:', location);
+    
+    if (eliminatedLocations.has(location)) {
+        // Reativar local
+        eliminatedLocations.delete(location);
+    } else {
+        // Eliminar local
+        eliminatedLocations.add(location);
+    }
+    
+    // Atualizar visual
+    updateSpyLocationsVisual();
+}
+
+function updateSpyLocationsVisual() {
+    const locationBtns = document.querySelectorAll('.spy-location-btn');
+    locationBtns.forEach(btn => {
+        const location = btn.getAttribute('data-location');
+        if (eliminatedLocations.has(location)) {
+            btn.classList.add('eliminated');
+        } else {
+            btn.classList.remove('eliminated');
+        }
+    });
+    
+    // Mostrar contador
+    const totalLocations = window.currentGameLocations?.length || 0;
+    const remainingLocations = totalLocations - eliminatedLocations.size;
+    
+    // Atualizar ou criar contador
+    let counter = document.querySelector('.spy-counter');
+    if (!counter && document.querySelector('.spy-locations-grid')) {
+        counter = document.createElement('p');
+        counter.className = 'spy-counter';
+        counter.style.cssText = 'text-align: center; margin: 10px 0; font-weight: bold; color: #dc2626;';
+        document.querySelector('.spy-locations-grid').parentNode.insertBefore(counter, document.querySelector('.spy-locations-grid'));
+    }
+    
+    if (counter) {
+        counter.textContent = `🎯 Restam ${remainingLocations} locais possíveis (${eliminatedLocations.size} eliminados)`;
+    }
+}
+
+function showVotingConfirmationModal(initiator, timeLimit) {
+    const modal = document.createElement('div');
+    modal.id = 'voting-confirmation-modal';
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="modal-content voting-confirmation-content">
+            <h3>🗳️ Confirmação de Votação</h3>
+            <p><strong>${initiator}</strong> quer iniciar a votação.</p>
+            <p>Você concorda?</p>
+            
+            <div class="voting-confirmation-timer">
+                <div class="timer-circle">
+                    <span id="confirmation-timer">${timeLimit}</span>
+                </div>
+            </div>
+            
+            <div class="voting-confirmation-status">
+                <p id="confirmation-status">Aguardando respostas...</p>
+            </div>
+            
+            <div class="voting-confirmation-buttons">
+                <button class="vote-confirmation-btn yes-btn" onclick="sendVotingConfirmation('yes')">
+                    ✅ Sim, vamos votar
+                </button>
+                <button class="vote-confirmation-btn no-btn" onclick="sendVotingConfirmation('no')">
+                    ❌ Não, continuar jogando
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Timer countdown
+    let remaining = timeLimit;
+    const timerElement = document.getElementById('confirmation-timer');
+    const interval = setInterval(() => {
+        remaining--;
+        if (timerElement) {
+            timerElement.textContent = remaining;
+            
+            // Mudar cor conforme o tempo
+            if (remaining <= 3) {
+                timerElement.parentElement.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else if (remaining <= 5) {
+                timerElement.parentElement.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            }
+        }
+        
+        if (remaining <= 0) {
+            clearInterval(interval);
+            // Auto-vote "no" se não respondeu
+            if (votingConfirmationActive) {
+                sendVotingConfirmation('no');
+            }
+        }
+    }, 1000);
+}
+
+function updateVotingConfirmationModal(voted, total) {
+    const status = document.getElementById('confirmation-status');
+    if (status) {
+        status.textContent = `${voted}/${total} jogadores responderam`;
+    }
+}
+
+function closeVotingConfirmationModal() {
+    const modal = document.getElementById('voting-confirmation-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function sendVotingConfirmation(vote) {
+    console.log('Enviando confirmação:', vote);
+    socket.emit('vote-confirmation', { vote });
+    
+    // Desabilitar botões
+    document.querySelectorAll('.vote-confirmation-btn').forEach(btn => {
+        btn.disabled = true;
+        if ((vote === 'yes' && btn.classList.contains('yes-btn')) || 
+            (vote === 'no' && btn.classList.contains('no-btn'))) {
+            btn.style.opacity = '1';
+            btn.textContent = vote === 'yes' ? '✅ Você votou SIM' : '❌ Você votou NÃO';
+        } else {
+            btn.style.opacity = '0.5';
+        }
+    });
 }
 
 function updateGameControls(state) {
@@ -649,6 +827,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
