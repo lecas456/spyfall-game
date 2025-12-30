@@ -507,21 +507,22 @@ async loadImagesFromSupabase() {
     console.log(`👔 Profissões: ${Array.from(this.playerProfessions.values()).join(', ')}`);
     
     try {
-      // Buscar imagem do local
+      // Buscar imagem do local SEMPRE
       console.log(`🔍 Buscando imagem do local: ${this.location}`);
       this.locationImage = await getImageFromSupabase(this.location, 'local');
       console.log(`📸 Imagem do local resultado: ${this.locationImage}`);
       
-      // Buscar imagens das profissões
-      for (const [playerId, profession] of this.playerProfessions.entries()) {
-        console.log(`🔍 Buscando imagem da profissão: ${profession} para jogador ${playerId}`);
-        const professionImage = await getImageFromSupabase(profession, 'profissao');
-        console.log(`📸 Imagem da profissão resultado: ${professionImage}`);
-        this.playerProfessionImages.set(playerId, professionImage);
+      // Buscar imagens das profissões APENAS se tem profissões
+      if (this.hasProfessions) {
+          for (const [playerId, profession] of this.playerProfessions.entries()) {
+            console.log(`🔍 Buscando imagem da profissão: ${profession} para jogador ${playerId}`);
+            const professionImage = await getImageFromSupabase(profession, 'profissao');
+            console.log(`📸 Imagem da profissão resultado: ${professionImage}`);
+            this.playerProfessionImages.set(playerId, professionImage);
+          }
       }
       
       console.log(`✅ Todas as imagens processadas para sala ${this.code}`);
-      console.log(`📋 Resumo: locationImage=${this.locationImage}, profissionImages=${this.playerProfessionImages.size}`);
       
       // Enviar update para todos os jogadores
       this.players.forEach((player) => {
@@ -530,7 +531,7 @@ async loadImagesFromSupabase() {
           console.log(`📤 Enviando imagens para jogador: ${player.name}`);
           playerSocket.emit('images-loaded', {
             locationImage: this.locationImage,
-            professionImage: this.playerProfessionImages.get(player.id)
+            professionImage: this.hasProfessions ? this.playerProfessionImages.get(player.id) : null
           });
         }
       });
@@ -643,24 +644,24 @@ async loadImagesFromSupabase() {
   }
   
   processVotingConfirmation() {
-      const totalPlayers = this.players.size;
-      const yesVotes = Array.from(this.votingConfirmation.values()).filter(vote => vote === 'yes').length;
-      
-      // Considerar não-votantes como "no"
-      const noVotes = totalPlayers - yesVotes;
-      
-      console.log(`Votação: ${yesVotes} Sim, ${noVotes} Não`);
-      
-      if (yesVotes > totalPlayers / 2) {
-          // Maioria disse sim - iniciar votação
-          this.startVoting();
-          return { result: 'approved', yesVotes, noVotes };
-      } else {
-          // Maioria disse não ou não respondeu - voltar ao jogo
-          this.gameState = 'playing';
-          return { result: 'rejected', yesVotes, noVotes };
-      }
-  }
+    const totalPlayers = this.players.size;
+    const yesVotes = Array.from(this.votingConfirmation.values()).filter(vote => vote === 'yes').length;
+    const noVotes = totalPlayers - yesVotes;
+    
+    console.log(`Votação: ${yesVotes} Sim, ${noVotes} Não`);
+    
+    if (yesVotes > totalPlayers / 2) {
+        // Maioria disse sim - iniciar votação
+        console.log('Iniciando votação...');
+        this.startVoting(); // ESTA LINHA É IMPORTANTE
+        return { result: 'approved', yesVotes, noVotes };
+    } else {
+        // Maioria disse não ou não respondeu - voltar ao jogo
+        console.log('❌ Votação rejeitada, voltando ao jogo');
+        this.gameState = 'playing';
+        return { result: 'rejected', yesVotes, noVotes };
+    }
+}
   
   voteConfirmation(playerId, vote) {
       if (this.gameState !== 'voting_confirmation') return false;
@@ -910,19 +911,21 @@ io.on('connection', (socket) => {
             firstQuestionPlayer: room.firstQuestionPlayer,
             playerOrder: room.playerOrder,
             timeRemaining: room.timeRemaining,
-            hasProfessions: room.hasProfessions // ADICIONAR
+            hasProfessions: room.hasProfessions
         });
     } else {
         playerSocket.emit('game-started', {
             isSpy: false,
             location: room.location,
-            profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null, // MODIFICAR
+            profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
+            locationImage: null, // ADICIONAR - será carregado depois
+            professionImage: null, // ADICIONAR - será carregado depois
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
             firstQuestionPlayer: room.firstQuestionPlayer,
             playerOrder: room.playerOrder,
             timeRemaining: room.timeRemaining,
-            hasProfessions: room.hasProfessions // ADICIONAR
+            hasProfessions: room.hasProfessions
         });
     }
     } else if (room.gameState === 'voting') {
@@ -1076,25 +1079,20 @@ io.on('connection', (socket) => {
         });
     } else {
         // Processamento completo
+        io.to(roomCode).emit('voting-confirmation-result', {
+            approved: result.result === 'approved',
+            yesVotes: result.yesVotes,
+            noVotes: result.noVotes
+        });
+        
         if (result.result === 'approved') {
-            io.to(roomCode).emit('voting-confirmation-result', {
-                approved: true,
-                yesVotes: result.yesVotes,
-                noVotes: result.noVotes
-            });
-            
+            console.log('🗳️ Enviando evento voting-started');
             // Iniciar votação real
             io.to(roomCode).emit('voting-started', {
                 players: Array.from(room.players.values()).map(p => ({
                     id: p.id,
                     name: p.name
                 }))
-            });
-        } else {
-            io.to(roomCode).emit('voting-confirmation-result', {
-                approved: false,
-                yesVotes: result.yesVotes,
-                noVotes: result.noVotes
             });
         }
     }
@@ -1258,6 +1256,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
