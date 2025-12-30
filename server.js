@@ -59,10 +59,6 @@ async function getImageFromSupabase(searchTerm, tipo) {
   return null;
 }
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
 app.use(express.static('public'));
 app.use(express.json());
 app.use(cookieParser());
@@ -650,7 +646,7 @@ async loadImagesFromSupabase() {
         const result = this.processVotingConfirmation();
         
         // ENVIAR resultado para todos os clientes
-        const io = require('./server.js').io || global.io;
+        const io = global.io;//const io = require('./server.js').io || global.io;
         if (io) {
             io.to(this.code).emit('voting-confirmation-result', {
                 approved: result.result === 'approved',
@@ -943,7 +939,7 @@ io.on('connection', (socket) => {
     if (room.gameState === 'playing') {
       const player = room.players.get(currentPlayerId);
       if (player.id === room.spy) {
-        playerSocket.emit('game-started', {
+        socket.emit('game-started', { // ← Usar socket
             isSpy: true,
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
@@ -958,7 +954,7 @@ io.on('connection', (socket) => {
         console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
         console.log(`   - hasProfessions: ${room.hasProfessions}`);
         
-        playerSocket.emit('game-started', {
+        socket.emit('game-started', { 
             isSpy: false,
             location: room.location,
             profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
@@ -1022,7 +1018,7 @@ io.on('connection', (socket) => {
                     playerSocket.roomCode = roomCode;
                     
                     if (player.id === room.spy) {
-                        playerSocket.emit('game-started', {
+                        socket.emit('game-started', { // ← Usar socket
                             isSpy: true,
                             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
                             currentPlayer: room.currentPlayer,
@@ -1031,15 +1027,23 @@ io.on('connection', (socket) => {
                             timeRemaining: room.timeRemaining
                         });
                     } else {
-                        playerSocket.emit('game-started', {
+                        console.log(`📤 Enviando dados para ${player.name} (não-espião):`);
+                        console.log(`   - Local: ${room.location}`);
+                        console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
+                        console.log(`   - hasProfessions: ${room.hasProfessions}`);
+                        
+                        socket.emit('game-started', { 
                             isSpy: false,
                             location: room.location,
-                            profession: room.playerProfessions.get(player.id),
+                            profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
+                            locationImage: null, // Será carregado depois
+                            professionImage: null, // Será carregado depois
                             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
                             currentPlayer: room.currentPlayer,
-                            firstQuestionPlayer: room.firstQuestionPlayer, // NOVA PROPRIEDADE
+                            firstQuestionPlayer: room.firstQuestionPlayer,
                             playerOrder: room.playerOrder,
-                            timeRemaining: room.timeRemaining
+                            timeRemaining: room.timeRemaining,
+                            hasProfessions: room.hasProfessions
                         });
                     }
                 }
@@ -1300,6 +1304,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
