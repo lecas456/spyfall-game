@@ -646,7 +646,7 @@ async loadImagesFromSupabase() {
         const result = this.processVotingConfirmation();
         
         // ENVIAR resultado para todos os clientes
-        const io = global.io;//const io = require('./server.js').io || global.io;
+        const io = global.io;
         if (io) {
             io.to(this.code).emit('voting-confirmation-result', {
                 approved: result.result === 'approved',
@@ -662,15 +662,19 @@ async loadImagesFromSupabase() {
                         name: p.name
                     }))
                 });
+            } else {
+                console.log('❌ Timer expirou e votação rejeitada - continuando jogo');
+                io.to(this.code).emit('timer-update', {
+                    timeRemaining: this.timeRemaining
+                });
             }
         }
-        
     }, 10000);
     
     return { initiator: initiator.name };
 }
   
-  processVotingConfirmation() {
+ processVotingConfirmation() {
     // Limpar o timer se ainda estiver rodando
     if (this.votingConfirmationTimer) {
         clearTimeout(this.votingConfirmationTimer);
@@ -694,6 +698,13 @@ async loadImagesFromSupabase() {
         // Maioria disse não ou não respondeu - voltar ao jogo
         console.log('❌ Votação rejeitada, voltando ao jogo');
         this.gameState = 'playing';
+        
+        // CORREÇÃO: Reiniciar o timer do jogo se ainda há tempo
+        if (this.timeRemaining > 0 && !this.timer) {
+            console.log(`🔄 Reiniciando timer do jogo - ${this.timeRemaining}s restantes`);
+            this.startTimer();
+        }
+        
         return { result: 'rejected', yesVotes, noVotes };
     }
 }
@@ -1142,6 +1153,12 @@ io.on('connection', (socket) => {
                     name: p.name
                 }))
             });
+        } else {
+            // CORREÇÃO: Quando votação é rejeitada, continuar enviando timer updates
+            console.log('❌ Votação rejeitada, continuando jogo normal');
+            io.to(roomCode).emit('timer-update', {
+                timeRemaining: room.timeRemaining
+            });
         }
     }
 });
@@ -1304,6 +1321,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
