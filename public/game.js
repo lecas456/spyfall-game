@@ -65,6 +65,9 @@ socket.on('joined-room', function(data) {
     currentPlayer = data.playerId;
     gameState = data.gameState;
     
+    // Garantir que os dados dos jogadores estejam corretos
+    console.log('Jogadores na sala:', data.players.map(p => `${p.name} (${p.id})`));
+    
     // Salvar informações nos cookies
     setCookie('playerId', data.playerId, 1);
     setCookie('playerCode', data.playerCode, 1);
@@ -88,6 +91,11 @@ socket.on('joined-room', function(data) {
 socket.on('player-joined', function(data) {
     console.log('Jogador entrou:', data);
     updatePlayersList(data.players);
+    
+    // Atualizar currentRoom com nova lista de jogadores
+    if (currentRoom) {
+        currentRoom.players = data.players;
+    }
 });
 
 socket.on('game-started', function(data) {
@@ -876,9 +884,28 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-function getFirstQuestionDisplay(firstQuestionPlayerId) {
-    const players = currentRoom?.players || [];
-    const firstPlayer = players.find(p => p.id === firstQuestionPlayerId);
+function getFirstQuestionDisplay(firstQuestionPlayerId, gameData = null) {
+    // Tentar primeiro usar dados do jogo atual
+    let playerName = null;
+    
+    if (gameData && gameData.playerOrder && gameData.firstQuestionPlayer) {
+        // Usar dados do currentRoom se disponível
+        const players = currentRoom?.players || [];
+        const firstPlayer = players.find(p => p.id === firstQuestionPlayerId);
+        playerName = firstPlayer?.name;
+    }
+    
+    // Se não encontrou, tentar usar dados globais salvos
+    if (!playerName && window.currentGameData && currentRoom?.players) {
+        const firstPlayer = currentRoom.players.find(p => p.id === firstQuestionPlayerId);
+        playerName = firstPlayer?.name;
+    }
+    
+    // Fallback final
+    if (!playerName) {
+        playerName = 'Um Jogador';
+    }
+    
     const isMe = firstQuestionPlayerId === currentPlayer;
     
     if (isMe) {
@@ -887,7 +914,7 @@ function getFirstQuestionDisplay(firstQuestionPlayerId) {
         </div>`;
     } else {
         return `<div style="background: #3b82f6; color: white; padding: 10px 15px; border-radius: 8px; margin: 10px 0; text-align: center;">
-            🎤 <strong>${firstPlayer?.name || 'Jogador'}</strong> fará a primeira pergunta
+            🎤 <strong>${playerName}</strong> fará a primeira pergunta
         </div>`;
     }
 }
@@ -909,6 +936,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
