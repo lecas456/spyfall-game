@@ -416,6 +416,9 @@ class Room {
     this.playerProfessions = new Map();
     this.playerProfessionImages = new Map(); // ADICIONAR ESTA LINHA
     this.locationImage = null; // ADICIONAR ESTA LINHA
+    this.hasProfessions = true; // ADICIONAR ESTA LINHA
+    this.votingConfirmation = new Map(); // ADICIONAR - para confirmação de votação
+    this.votingConfirmationTimer = null; // ADICIONAR
   }
 
   addPlayer(playerId, name, socketId) {
@@ -459,7 +462,7 @@ class Room {
     this.cancelInactivityDelete();
     this.gameState = 'playing';
     
-    // Usar locais com profissões
+    // Usar locais com suas respectivas profissões
     const availableLocationKeys = Object.keys(locationsWithProfessions).slice(0, this.locationsCount);
     this.availableLocations = availableLocationKeys;
     this.location = availableLocationKeys[Math.floor(Math.random() * availableLocationKeys.length)];
@@ -467,18 +470,20 @@ class Room {
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
     
-    // SORTEAR PROFISSÕES
-    const locationProfessions = locationsWithProfessions[this.location];
-    playerIds.forEach(playerId => {
-        if (playerId !== this.spy) {
-            const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
-            this.playerProfessions.set(playerId, randomProfession);
-        }
-    });
+    // SORTEAR PROFISSÕES APENAS SE hasProfessions = true
+    if (this.hasProfessions) {
+        const locationProfessions = locationsWithProfessions[this.location];
+        playerIds.forEach(playerId => {
+            if (playerId !== this.spy) {
+                const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
+                this.playerProfessions.set(playerId, randomProfession);
+            }
+        });
+    }
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
     
-    // NOVA FUNCIONALIDADE: Definir quem faz a primeira pergunta (não pode ser o espião)
+    // Definir quem faz a primeira pergunta (100% aleatório - pode ser o espião)
     this.firstQuestionPlayer = playerIds[Math.floor(Math.random() * playerIds.length)];
     this.currentPlayer = this.firstQuestionPlayer;
     
@@ -487,8 +492,10 @@ class Room {
     this.timeRemaining = this.timeLimit;
     this.startTimer();
     
-    // BUSCAR IMAGENS EM BACKGROUND
-    this.loadImagesFromSupabase();
+    // BUSCAR IMAGENS EM BACKGROUND apenas se tem profissões
+    if (this.hasProfessions) {
+        this.loadImagesFromSupabase();
+    }
     
     return true;
 }
@@ -618,6 +625,60 @@ async loadImagesFromSupabase() {
     }
   }
 
+  startVotingConfirmation(initiatorId) {
+      if (this.gameState !== 'playing') return false;
+      
+      this.gameState = 'voting_confirmation';
+      this.votingConfirmation.clear();
+      
+      const initiator = this.players.get(initiatorId);
+      console.log(`🗳️ ${initiator.name} iniciou votação, aguardando confirmação dos outros jogadores`);
+      
+      // Timer de 10 segundos
+      this.votingConfirmationTimer = setTimeout(() => {
+          this.processVotingConfirmation();
+      }, 10000);
+      
+      return { initiator: initiator.name };
+  }
+  
+  processVotingConfirmation() {
+      const totalPlayers = this.players.size;
+      const yesVotes = Array.from(this.votingConfirmation.values()).filter(vote => vote === 'yes').length;
+      
+      // Considerar não-votantes como "no"
+      const noVotes = totalPlayers - yesVotes;
+      
+      console.log(`Votação: ${yesVotes} Sim, ${noVotes} Não`);
+      
+      if (yesVotes > totalPlayers / 2) {
+          // Maioria disse sim - iniciar votação
+          this.startVoting();
+          return { result: 'approved', yesVotes, noVotes };
+      } else {
+          // Maioria disse não ou não respondeu - voltar ao jogo
+          this.gameState = 'playing';
+          return { result: 'rejected', yesVotes, noVotes };
+      }
+  }
+  
+  voteConfirmation(playerId, vote) {
+      if (this.gameState !== 'voting_confirmation') return false;
+      
+      this.votingConfirmation.set(playerId, vote);
+      
+      // Se todos votaram, processar imediatamente
+      if (this.votingConfirmation.size === this.players.size) {
+          if (this.votingConfirmationTimer) {
+              clearTimeout(this.votingConfirmationTimer);
+              this.votingConfirmationTimer = null;
+          }
+          return this.processVotingConfirmation();
+      }
+      
+      return { waiting: true, voted: this.votingConfirmation.size, total: this.players.size };
+  }
+  
   spyGuessLocation(guess) {
     if (guess.toLowerCase() === this.location.toLowerCase()) {
       this.endGame('spy_wins');
@@ -702,7 +763,7 @@ app.get('/room/:code', (req, res) => {
 });
 
 app.post('/create-room', (req, res) => {
-  const { playerName, timeLimit, locationsCount} = req.body;
+  const { playerName, timeLimit, locationsCount, hasProfessions } = req.body; // ADICIONAR hasProfessions
   
   // Validar nome
   if (!playerName || playerName.trim().length === 0) {
@@ -719,6 +780,7 @@ app.post('/create-room', (req, res) => {
   const room = new Room(roomCode, playerId);
   room.timeLimit = timeLimit || 300;
   room.locationsCount = locationsCount || 50;
+  room.hasProfessions = hasProfessions !== false; // ADICIONAR (padrão true)
   
   const result = room.addPlayer(playerId, playerName.trim(), null);
   
@@ -841,28 +903,28 @@ io.on('connection', (socket) => {
     if (room.gameState === 'playing') {
       const player = room.players.get(currentPlayerId);
       if (player.id === room.spy) {
-        // Reenviar informações completas para o espião
-        socket.emit('game-started', {
-          isSpy: true,
-          locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-          currentPlayer: room.currentPlayer,
-          playerOrder: room.playerOrder,
-          timeRemaining: room.timeRemaining
+        playerSocket.emit('game-started', {
+            isSpy: true,
+            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+            currentPlayer: room.currentPlayer,
+            firstQuestionPlayer: room.firstQuestionPlayer,
+            playerOrder: room.playerOrder,
+            timeRemaining: room.timeRemaining,
+            hasProfessions: room.hasProfessions // ADICIONAR
         });
-      } else {
-        // Reenviar informações completas para jogador normal
-        socket.emit('game-started', {
-          isSpy: false,
-          location: room.location,
-          locationImage: room.locationImage, // ADICIONAR
-          profession: room.playerProfessions.get(currentPlayerId),
-          professionImage: room.playerProfessionImages.get(currentPlayerId), // ADICIONAR
-          locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
-          currentPlayer: room.currentPlayer,
-          playerOrder: room.playerOrder,
-          timeRemaining: room.timeRemaining
+    } else {
+        playerSocket.emit('game-started', {
+            isSpy: false,
+            location: room.location,
+            profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null, // MODIFICAR
+            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+            currentPlayer: room.currentPlayer,
+            firstQuestionPlayer: room.firstQuestionPlayer,
+            playerOrder: room.playerOrder,
+            timeRemaining: room.timeRemaining,
+            hasProfessions: room.hasProfessions // ADICIONAR
         });
-      }
+    }
     } else if (room.gameState === 'voting') {
       // Se estiver em votação, mostrar modal de votação
       socket.emit('voting-started', {
@@ -974,25 +1036,70 @@ io.on('connection', (socket) => {
     const player = room?.players.get(socket.playerId);
     
     if (!room || !player || room.gameState !== 'playing') {
-      console.log('Bloqueado: sala não encontrada ou estado inválido');
-      return;
+        console.log('Bloqueado: sala não encontrada ou estado inválido');
+        return;
     }
 
-    // CORRIGIR ESTA LÓGICA: verificar apenas se não é espião
+    // Verificar se não é espião
     if (player.id !== room.spy) {
-      console.log(`Jogador ${player.name} (não-espião) iniciou votação`);
-      room.startVoting();
-      io.to(roomCode).emit('voting-started', {
-        players: Array.from(room.players.values()).map(p => ({
-          id: p.id,
-          name: p.name
-        }))
-      });
+        console.log(`Jogador ${player.name} (não-espião) iniciou confirmação de votação`);
+        const result = room.startVotingConfirmation(socket.playerId);
+        
+        if (result) {
+            io.to(roomCode).emit('voting-confirmation-started', {
+                initiator: result.initiator,
+                timeLimit: 10
+            });
+        }
     } else {
-      console.log(`Jogador ${player.name} é espião - não pode iniciar votação`);
+        console.log(`Jogador ${player.name} é espião - não pode iniciar votação`);
     }
-  });
+});
 
+  socket.on('vote-confirmation', (data) => {
+    console.log('Recebido vote-confirmation:', data, 'de:', socket.playerId);
+    const { vote } = data; // 'yes' ou 'no'
+    const roomCode = socket.roomCode;
+    const room = activeRooms.get(roomCode);
+    
+    if (!room || room.gameState !== 'voting_confirmation') {
+        return;
+    }
+
+    const result = room.voteConfirmation(socket.playerId, vote);
+    
+    if (result.waiting) {
+        // Ainda esperando mais votos
+        io.to(roomCode).emit('voting-confirmation-update', {
+            voted: result.voted,
+            total: result.total
+        });
+    } else {
+        // Processamento completo
+        if (result.result === 'approved') {
+            io.to(roomCode).emit('voting-confirmation-result', {
+                approved: true,
+                yesVotes: result.yesVotes,
+                noVotes: result.noVotes
+            });
+            
+            // Iniciar votação real
+            io.to(roomCode).emit('voting-started', {
+                players: Array.from(room.players.values()).map(p => ({
+                    id: p.id,
+                    name: p.name
+                }))
+            });
+        } else {
+            io.to(roomCode).emit('voting-confirmation-result', {
+                approved: false,
+                yesVotes: result.yesVotes,
+                noVotes: result.noVotes
+            });
+        }
+    }
+});
+  
   socket.on('spy-guess', (data) => {
     console.log('Recebido spy-guess:', data, 'de:', socket.playerId);
     const { guess } = data;
@@ -1151,6 +1258,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
