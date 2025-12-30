@@ -11,41 +11,38 @@
         <h1>🕵️ Espião da Serra</h1>
 
 		<div class="card">
-            <h2>Entrar em Sala</h2>
-            <form id="join-room-form">
-                <input type="text" id="join-name" placeholder="Seu nome" required>
-                <input type="text" id="room-code" placeholder="Código da sala" required>
-                <button type="submit">Entrar</button>
-            </form>
-        </div>
+		    <h2>🎮 Criar Nova Sala</h2>
+		    <form id="create-room-form">
+		        <input type="text" id="player-name" placeholder="Seu nome" required>
+		        
+		        <select id="time-limit">
+		            <option value="180">⏱️ 3 minutos</option>
+		            <option value="300" selected>⏱️ 5 minutos</option>
+		            <option value="420">⏱️ 7 minutos</option>
+		            <option value="600">⏱️ 10 minutos</option>
+		            <option value="900">⏱️ 15 minutos</option>
+		        </select>
 		
-        <div class="card">
-            <h2>Criar Nova Sala</h2>
-            <form id="create-room-form">
-                <input type="text" id="player-name" placeholder="Seu nome" required>
-                <select id="time-limit">
-                    <option value="180">3 minutos</option>
-                    <option value="300">5 minutos</option>
-                    <option value="420">7 minutos</option>
-                    <option value="600" selected>10 minutos</option>
-                    <option value="900">15 minutos</option>
-                </select>
-
-		<select id="locations-count">
-            	    <option value="20">20 locais (Muito Fácil)</option>
-            	    <option value="30">30 locais (Fácil)</option>
-            	    <option value="50" selected>50 locais (Médio)</option>
-            	    <option value="80">80 locais (Difícil)</option>
-            	    <option value="136">136 locais (Muito Difícil)</option>
-        	</select>			
-
-                <button type="submit">Criar Sala</button>
-            </form>
-        </div>
-
-    </div>
+		        <select id="locations-count">
+		            <option value="20">20 locais (Muito Fácil)</option>
+		            <option value="30">30 locais (Fácil)</option>
+		            <option value="50" selected>50 locais (Médio)</option>
+		            <option value="80">80 locais (Difícil)</option>
+		            <option value="136">136 locais (Muito Difícil)</option>
+		        </select>
+		
+		        <!-- NOVO CAMPO -->
+		        <select id="has-professions">
+		            <option value="true" selected>👔 Com Profissões</option>
+		            <option value="false">📍 Só Locais (sem profissões)</option>
+		        </select>
+		
+		        <button type="submit">Criar Sala</button>
+		    </form>
+		</div>
 
     <script src="script.js"></script>
 </body>
 </html>
+
 
