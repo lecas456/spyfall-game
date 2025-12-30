@@ -644,16 +644,24 @@ async loadImagesFromSupabase() {
   }
   
   processVotingConfirmation() {
+    // Limpar o timer se ainda estiver rodando
+    if (this.votingConfirmationTimer) {
+        clearTimeout(this.votingConfirmationTimer);
+        this.votingConfirmationTimer = null;
+    }
+
     const totalPlayers = this.players.size;
     const yesVotes = Array.from(this.votingConfirmation.values()).filter(vote => vote === 'yes').length;
+    
+    // CORREÇÃO: Votos não dados contam como "não"
     const noVotes = totalPlayers - yesVotes;
     
-    console.log(`Votação: ${yesVotes} Sim, ${noVotes} Não`);
+    console.log(`Votação finalizada: ${yesVotes} Sim, ${noVotes} Não (total: ${totalPlayers})`);
     
     if (yesVotes > totalPlayers / 2) {
         // Maioria disse sim - iniciar votação
-        console.log('Iniciando votação...');
-        this.startVoting(); // ESTA LINHA É IMPORTANTE
+        console.log('✅ Votação aprovada, iniciando votação real');
+        this.startVoting();
         return { result: 'approved', yesVotes, noVotes };
     } else {
         // Maioria disse não ou não respondeu - voltar ao jogo
@@ -664,21 +672,21 @@ async loadImagesFromSupabase() {
 }
   
   voteConfirmation(playerId, vote) {
-      if (this.gameState !== 'voting_confirmation') return false;
-      
-      this.votingConfirmation.set(playerId, vote);
-      
-      // Se todos votaram, processar imediatamente
-      if (this.votingConfirmation.size === this.players.size) {
-          if (this.votingConfirmationTimer) {
-              clearTimeout(this.votingConfirmationTimer);
-              this.votingConfirmationTimer = null;
-          }
-          return this.processVotingConfirmation();
-      }
-      
-      return { waiting: true, voted: this.votingConfirmation.size, total: this.players.size };
-  }
+    if (this.gameState !== 'voting_confirmation') return false;
+    
+    this.votingConfirmation.set(playerId, vote);
+    
+    // Se todos votaram, processar imediatamente
+    if (this.votingConfirmation.size === this.players.size) {
+        if (this.votingConfirmationTimer) {
+            clearTimeout(this.votingConfirmationTimer);
+            this.votingConfirmationTimer = null;
+        }
+        return this.processVotingConfirmation();
+    }
+    
+    return { waiting: true, voted: this.votingConfirmation.size, total: this.players.size };
+}
   
   spyGuessLocation(guess) {
     if (guess.toLowerCase() === this.location.toLowerCase()) {
@@ -1256,6 +1264,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
