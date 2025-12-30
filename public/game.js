@@ -106,7 +106,8 @@ socket.on('timer-update', function(data) {
 });
 
 socket.on('voting-started', function(data) {
-    console.log('Votação iniciada');
+    console.log('🗳️ MODAL DE VOTAÇÃO REAL DEVE ABRIR AGORA');
+    console.log('Dados da votação:', data);
     gameState = 'voting';
     showVotingModal(data.players);
 });
@@ -265,9 +266,11 @@ socket.on('voting-confirmation-result', function(data) {
     
     if (data.approved) {
         showNotification(`✅ Votação aprovada! (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'success');
+        console.log('✅ Aguardando modal de votação real...');
         // A votação real será aberta pelo evento 'voting-started' que vem em seguida
     } else {
         showNotification(`❌ Votação rejeitada (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'warning');
+        console.log('❌ Voltando ao jogo normal');
     }
 });
 
@@ -352,10 +355,12 @@ function updateGameInfo(data) {
         window.isCurrentPlayerSpy = false;
         gameInfo.className = 'game-info';
         
-        // Condicional para mostrar ou não as imagens/profissões
-        let imagesSection = '';
-        if (data.hasProfessions) {
-            imagesSection = `
+        // CORRIGIR: Lógica para mostrar ou não as imagens/profissões
+        let gameContent = '';
+        
+        if (data.hasProfessions && data.profession) {
+            // Modo com profissões
+            gameContent = `
                 <div class="game-images">
                     <div class="location-info">
                         <div class="image-placeholder" id="location-img-container">
@@ -377,15 +382,23 @@ function updateGameInfo(data) {
                     </div>
                 </div>`;
         } else {
-            imagesSection = `
-                <div style="text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                    <h3 style="margin: 0; font-size: 1.5rem;">📍 ${data.location}</h3>
-                    <p style="margin: 5px 0 0 0; opacity: 0.9;">Seu local secreto</p>
+            // Modo só local (sem profissões)
+            gameContent = `
+                <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 25px;">
+                    <div class="location-info" style="height: 200px;">
+                        <div class="image-placeholder" id="location-img-container">
+                            ${data.locationImage ? 
+                              `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
+                              '<div class="loading-placeholder">🖼️ Carregando imagem do local...</div>'
+                            }
+                            <div class="location-overlay">📍 ${data.location}</div>
+                        </div>
+                    </div>
                 </div>`;
         }
         
         gameInfo.innerHTML = `
-            ${imagesSection}
+            ${gameContent}
             <p>Descubra quem é o espião fazendo perguntas!</p>
             ${data.firstQuestionPlayer ? getFirstQuestionDisplay(data.firstQuestionPlayer) : ''}
             <p><strong>Locais possíveis nesta partida: ${data.locations.length}</strong></p>
@@ -827,6 +840,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
