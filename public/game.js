@@ -713,6 +713,40 @@ function showResultModal(result) {
     }
     
     content.innerHTML = resultText;
+    
+    // NOVA FUNCIONALIDADE: Delay no botão para o espião
+    const playAgainBtn = document.getElementById('play-again');
+    const wasSpyWhoGuessed = window.isCurrentPlayerSpy && result.result; // Se é espião e jogo acabou
+    
+    if (wasSpyWhoGuessed) {
+        // Espião - desabilitar botão por 8 segundos
+        playAgainBtn.disabled = true;
+        playAgainBtn.style.opacity = '0.5';
+        playAgainBtn.style.cursor = 'not-allowed';
+        
+        let countdown = 8;
+        playAgainBtn.textContent = `🎮 Jogar Novamente (${countdown}s)`;
+        
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            playAgainBtn.textContent = `🎮 Jogar Novamente (${countdown}s)`;
+            
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                playAgainBtn.disabled = false;
+                playAgainBtn.style.opacity = '1';
+                playAgainBtn.style.cursor = 'pointer';
+                playAgainBtn.textContent = '🎮 Jogar Novamente';
+            }
+        }, 1000);
+    } else {
+        // Não-espião - botão normal
+        playAgainBtn.disabled = false;
+        playAgainBtn.style.opacity = '1';
+        playAgainBtn.style.cursor = 'pointer';
+        playAgainBtn.textContent = '🎮 Jogar Novamente';
+    }
+    
     modal.style.display = 'block';
 }
 
@@ -875,6 +909,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
