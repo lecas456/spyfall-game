@@ -2,40 +2,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const createRoomForm = document.getElementById('create-room-form');
     const joinRoomForm = document.getElementById('join-room-form');
 
-    createRoomForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
+	createRoomForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const playerName = document.getElementById('player-name').value;
+    const timeLimit = parseInt(document.getElementById('time-limit').value);
+    const locationsCount = parseInt(document.getElementById('locations-count').value);
+    const hasProfessions = document.getElementById('has-professions').value === 'true'; // NOVO CAMPO
+
+    try {
+        const response = await fetch('/create-room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ playerName, timeLimit, locationsCount, hasProfessions }) // ADICIONAR hasProfessions
+        });
+
+        const data = await response.json();
         
-        const playerName = document.getElementById('player-name').value;
-        const timeLimit = parseInt(document.getElementById('time-limit').value);
-	const locationsCount = parseInt(document.getElementById('locations-count').value); // ADICIONAR	
-
-        try {
-            const response = await fetch('/create-room', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ playerName, timeLimit, locationsCount })
-            });
-
-            const data = await response.json();
+        if (data.success) {
+            // Salvar informações nos cookies
+            setCookie('playerId', data.playerId, 1);
+            setCookie('playerCode', data.playerCode, 1);
+            setCookie('playerName', playerName, 1);
             
-            if (data.success) {
-                // Salvar informações nos cookies
-                setCookie('playerId', data.playerId, 1);
-                setCookie('playerCode', data.playerCode, 1);
-                setCookie('playerName', playerName, 1);
-                
-                // Redirecionar para a sala
-                window.location.href = `/room/${data.roomCode}`;
-            } else {
-                alert('Erro: ' + (data.message || 'Erro ao criar sala'));
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-            alert('Erro ao criar sala');
+            // Redirecionar para a sala
+            window.location.href = `/room/${data.roomCode}`;
+        } else {
+            alert('Erro: ' + (data.message || 'Erro ao criar sala'));
         }
-    });
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao criar sala');
+    }
+});
 
     joinRoomForm.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -66,4 +67,5 @@ function getCookie(name) {
         if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
+
 }
