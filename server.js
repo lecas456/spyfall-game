@@ -8,6 +8,12 @@ const supabase = require('./config/supabase'); // Usar o Supabase
 // Cache de imagens para evitar muitas consultas
 const imageCache = new Map();
 
+// ADICIONAR ESTAS LINHAS para acessar io globalmente:
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+global.io = io;
 // Função para buscar imagem no Supabase
 // Função para buscar imagem no Supabase
 async function getImageFromSupabase(searchTerm, tipo) {
@@ -470,15 +476,19 @@ class Room {
     const playerIds = Array.from(this.players.keys());
     this.spy = playerIds[Math.floor(Math.random() * playerIds.length)];
     
-    // SORTEAR PROFISSÕES APENAS SE hasProfessions = true
+    // CORREÇÃO: SORTEAR PROFISSÕES APENAS SE hasProfessions = true
     if (this.hasProfessions) {
+        console.log(`🎭 Sorteando profissões para o local: ${this.location}`);
         const locationProfessions = locationsWithProfessions[this.location];
         playerIds.forEach(playerId => {
             if (playerId !== this.spy) {
                 const randomProfession = locationProfessions[Math.floor(Math.random() * locationProfessions.length)];
                 this.playerProfessions.set(playerId, randomProfession);
+                console.log(`👔 ${this.players.get(playerId).name} -> ${randomProfession}`);
             }
         });
+    } else {
+        console.log(`📍 Modo apenas local, sem profissões`);
     }
     
     this.playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
@@ -492,10 +502,9 @@ class Room {
     this.timeRemaining = this.timeLimit;
     this.startTimer();
     
-    // BUSCAR IMAGENS EM BACKGROUND apenas se tem profissões
-    if (this.hasProfessions) {
-        this.loadImagesFromSupabase();
-    }
+    // CORREÇÃO: SEMPRE chamar loadImagesFromSupabase para carregar pelo menos o local
+    console.log(`🖼️ Carregando imagens (hasProfessions: ${this.hasProfessions})`);
+    this.loadImagesFromSupabase();
     
     return true;
 }
@@ -627,21 +636,43 @@ async loadImagesFromSupabase() {
   }
 
   startVotingConfirmation(initiatorId) {
-      if (this.gameState !== 'playing') return false;
-      
-      this.gameState = 'voting_confirmation';
-      this.votingConfirmation.clear();
-      
-      const initiator = this.players.get(initiatorId);
-      console.log(`🗳️ ${initiator.name} iniciou votação, aguardando confirmação dos outros jogadores`);
-      
-      // Timer de 10 segundos
-      this.votingConfirmationTimer = setTimeout(() => {
-          this.processVotingConfirmation();
-      }, 10000);
-      
-      return { initiator: initiator.name };
-  }
+    if (this.gameState !== 'playing') return false;
+    
+    this.gameState = 'voting_confirmation';
+    this.votingConfirmation.clear();
+    
+    const initiator = this.players.get(initiatorId);
+    console.log(`🗳️ ${initiator.name} iniciou votação, aguardando confirmação dos outros jogadores`);
+    
+    // CORREÇÃO: Timer de 10 segundos com callback adequado
+    this.votingConfirmationTimer = setTimeout(() => {
+        console.log('⏰ Timer de votação expirou, processando resultado');
+        const result = this.processVotingConfirmation();
+        
+        // ENVIAR resultado para todos os clientes
+        const io = require('./server.js').io || global.io;
+        if (io) {
+            io.to(this.code).emit('voting-confirmation-result', {
+                approved: result.result === 'approved',
+                yesVotes: result.yesVotes,
+                noVotes: result.noVotes
+            });
+            
+            if (result.result === 'approved') {
+                console.log('🗳️ Timer expirou, mas votação foi aprovada - enviando voting-started');
+                io.to(this.code).emit('voting-started', {
+                    players: Array.from(this.players.values()).map(p => ({
+                        id: p.id,
+                        name: p.name
+                    }))
+                });
+            }
+        }
+        
+    }, 10000);
+    
+    return { initiator: initiator.name };
+}
   
   processVotingConfirmation() {
     // Limpar o timer se ainda estiver rodando
@@ -922,12 +953,17 @@ io.on('connection', (socket) => {
             hasProfessions: room.hasProfessions
         });
     } else {
+        console.log(`📤 Enviando dados para ${player.name} (não-espião):`);
+        console.log(`   - Local: ${room.location}`);
+        console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
+        console.log(`   - hasProfessions: ${room.hasProfessions}`);
+        
         playerSocket.emit('game-started', {
             isSpy: false,
             location: room.location,
             profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
-            locationImage: null, // ADICIONAR - será carregado depois
-            professionImage: null, // ADICIONAR - será carregado depois
+            locationImage: null, // Será carregado depois
+            professionImage: null, // Será carregado depois
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
             firstQuestionPlayer: room.firstQuestionPlayer,
@@ -1264,6 +1300,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
