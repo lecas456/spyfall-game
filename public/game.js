@@ -260,14 +260,13 @@ socket.on('voting-confirmation-update', function(data) {
 });
 
 socket.on('voting-confirmation-result', function(data) {
-    console.log('Resultado confirmação:', data);
+    console.log('📊 Resultado da confirmação de votação:', data);
     closeVotingConfirmationModal();
     votingConfirmationActive = false;
     
     if (data.approved) {
         showNotification(`✅ Votação aprovada! (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'success');
         console.log('✅ Aguardando modal de votação real...');
-        // A votação real será aberta pelo evento 'voting-started' que vem em seguida
     } else {
         showNotification(`❌ Votação rejeitada (${data.yesVotes} Sim, ${data.noVotes} Não)`, 'warning');
         console.log('❌ Voltando ao jogo normal');
@@ -329,6 +328,12 @@ function updatePlayersList(players) {
 }
 
 function updateGameInfo(data) {
+    console.log('🎮 updateGameInfo recebido:', data);
+    console.log('   - isSpy:', data.isSpy);
+    console.log('   - location:', data.location);
+    console.log('   - profession:', data.profession);
+    console.log('   - hasProfessions:', data.hasProfessions);
+    
     // ADICIONAR ESTA LINHA:
     window.currentGameData = data;
     
@@ -355,11 +360,16 @@ function updateGameInfo(data) {
         window.isCurrentPlayerSpy = false;
         gameInfo.className = 'game-info';
         
-        // CORRIGIR: Lógica para mostrar ou não as imagens/profissões
+        // CORREÇÃO COMPLETA da lógica de exibição
         let gameContent = '';
         
-        if (data.hasProfessions && data.profession) {
-            // Modo com profissões
+        console.log('🔍 Verificando modo de exibição:');
+        console.log('   - hasProfessions:', data.hasProfessions);
+        console.log('   - profession existe:', !!data.profession);
+        
+        if (data.hasProfessions === true && data.profession) {
+            // Modo com profissões - duas colunas
+            console.log('✅ Modo com profissões - duas colunas');
             gameContent = `
                 <div class="game-images">
                     <div class="location-info">
@@ -382,10 +392,11 @@ function updateGameInfo(data) {
                     </div>
                 </div>`;
         } else {
-            // Modo só local (sem profissões)
+            // Modo só local - uma coluna
+            console.log('✅ Modo só local - uma coluna');
             gameContent = `
                 <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 25px;">
-                    <div class="location-info" style="height: 200px;">
+                    <div class="location-info" style="height: 250px;">
                         <div class="image-placeholder" id="location-img-container">
                             ${data.locationImage ? 
                               `<img src="${data.locationImage}" alt="${data.location}" class="location-image">` : 
@@ -864,6 +875,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
