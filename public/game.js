@@ -724,7 +724,7 @@ function showResultModal(result) {
         playAgainBtn.style.opacity = '0.5';
         playAgainBtn.style.cursor = 'not-allowed';
         
-        let countdown = 8;
+        let countdown = 4;
         playAgainBtn.textContent = `🎮 Jogar Novamente (${countdown}s)`;
         
         const countdownInterval = setInterval(() => {
@@ -909,6 +909,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
