@@ -939,7 +939,7 @@ io.on('connection', (socket) => {
     if (room.gameState === 'playing') {
       const player = room.players.get(currentPlayerId);
       if (player.id === room.spy) {
-        socket.emit('game-started', { // ← Usar socket
+       playerSocket.emit('game-started', { // ← Usar socket
             isSpy: true,
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
@@ -954,7 +954,7 @@ io.on('connection', (socket) => {
         console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
         console.log(`   - hasProfessions: ${room.hasProfessions}`);
         
-        socket.emit('game-started', { 
+       playerSocket.emit('game-started', { 
             isSpy: false,
             location: room.location,
             profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
@@ -1018,7 +1018,7 @@ io.on('connection', (socket) => {
                     playerSocket.roomCode = roomCode;
                     
                     if (player.id === room.spy) {
-                        socket.emit('game-started', { // ← Usar socket
+                       playerSocket.emit('game-started', { // ← Usar socket
                             isSpy: true,
                             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
                             currentPlayer: room.currentPlayer,
@@ -1032,7 +1032,7 @@ io.on('connection', (socket) => {
                         console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
                         console.log(`   - hasProfessions: ${room.hasProfessions}`);
                         
-                        socket.emit('game-started', { 
+                       playerSocket.emit('game-started', { 
                             isSpy: false,
                             location: room.location,
                             profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
@@ -1304,6 +1304,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
