@@ -492,6 +492,8 @@ function showVotingConfirmationModal(initiator, timeLimit) {
     
     // Timer countdown
     let remaining = timeLimit;
+    let userVoted = false; // ADICIONAR controle se usuário já votou
+    
     const timerElement = document.getElementById('confirmation-timer');
     const interval = setInterval(() => {
         remaining--;
@@ -508,12 +510,34 @@ function showVotingConfirmationModal(initiator, timeLimit) {
         
         if (remaining <= 0) {
             clearInterval(interval);
-            // Auto-vote "no" se não respondeu
-            if (votingConfirmationActive) {
+            // CORREÇÃO: Auto-vote "no" apenas se não respondeu
+            if (votingConfirmationActive && !userVoted) {
+                console.log('⏰ Tempo esgotado, enviando voto automático: NÃO');
                 sendVotingConfirmation('no');
             }
         }
     }, 1000);
+    
+    // Função modificada para marcar que votou
+    window.sendVotingConfirmation = function(vote) {
+        if (userVoted) return; // Evitar votos duplos
+        
+        userVoted = true;
+        console.log('Enviando confirmação:', vote);
+        socket.emit('vote-confirmation', { vote });
+        
+        // Desabilitar botões
+        document.querySelectorAll('.vote-confirmation-btn').forEach(btn => {
+            btn.disabled = true;
+            if ((vote === 'yes' && btn.classList.contains('yes-btn')) || 
+                (vote === 'no' && btn.classList.contains('no-btn'))) {
+                btn.style.opacity = '1';
+                btn.textContent = vote === 'yes' ? '✅ Você votou SIM' : '❌ Você votou NÃO';
+            } else {
+                btn.style.opacity = '0.5';
+            }
+        });
+    };
 }
 
 function updateVotingConfirmationModal(voted, total) {
@@ -840,6 +864,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
