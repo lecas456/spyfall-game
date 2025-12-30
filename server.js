@@ -662,11 +662,13 @@ async loadImagesFromSupabase() {
                         name: p.name
                     }))
                 });
-            } else {
+           } else {
                 console.log('❌ Timer expirou e votação rejeitada - continuando jogo');
-                io.to(this.code).emit('timer-update', {
-                    timeRemaining: this.timeRemaining
-                });
+                setTimeout(() => {
+                    io.to(this.code).emit('timer-update', {
+                        timeRemaining: this.timeRemaining
+                    });
+                }, 100);
             }
         }
     }, 10000);
@@ -699,11 +701,8 @@ async loadImagesFromSupabase() {
         console.log('❌ Votação rejeitada, voltando ao jogo');
         this.gameState = 'playing';
         
-        // CORREÇÃO: Reiniciar o timer do jogo se ainda há tempo
-        if (this.timeRemaining > 0 && !this.timer) {
-            console.log(`🔄 Reiniciando timer do jogo - ${this.timeRemaining}s restantes`);
-            this.startTimer();
-        }
+        // NÃO reiniciar timer aqui - o timer principal já cuida disso
+        console.log(`🔄 Voltando ao estado 'playing' - ${this.timeRemaining}s restantes`);
         
         return { result: 'rejected', yesVotes, noVotes };
     }
@@ -1062,14 +1061,18 @@ io.on('connection', (socket) => {
 
             // Timer code continua igual...
             const timerInterval = setInterval(() => {
-                if (room.gameState !== 'playing') {
+                // MUDANÇA: Permitir que continue rodando mesmo em voting_confirmation
+                if (room.gameState !== 'playing' && room.gameState !== 'voting_confirmation') {
                     clearInterval(timerInterval);
                     return;
                 }
             
-                io.to(roomCode).emit('timer-update', {
-                    timeRemaining: room.timeRemaining
-                });
+                // Só emitir timer-update se estiver jogando (não durante confirmação)
+                if (room.gameState === 'playing') {
+                    io.to(roomCode).emit('timer-update', {
+                        timeRemaining: room.timeRemaining
+                    });
+                }
                 
                 if (room.timeRemaining <= 0) {
                     clearInterval(timerInterval);
@@ -1154,11 +1157,13 @@ io.on('connection', (socket) => {
                 }))
             });
         } else {
-            // CORREÇÃO: Quando votação é rejeitada, continuar enviando timer updates
+            // CORREÇÃO: Quando votação é rejeitada, mandar timer update imediato
             console.log('❌ Votação rejeitada, continuando jogo normal');
-            io.to(roomCode).emit('timer-update', {
-                timeRemaining: room.timeRemaining
-            });
+            setTimeout(() => {
+                io.to(roomCode).emit('timer-update', {
+                    timeRemaining: room.timeRemaining
+                });
+            }, 100); // Pequeno delay para garantir que o modal feche primeiro
         }
     }
 });
@@ -1321,6 +1326,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
