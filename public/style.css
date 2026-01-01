@@ -1020,4 +1020,13 @@ button:disabled {
   }
 }
 
+.player-card.disconnected {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.player-card.disconnected .player-avatar {
+  opacity: 0.7;
+  filter: grayscale(50%);
+}
 
