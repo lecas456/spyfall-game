@@ -172,7 +172,22 @@ socket.on('error', function(data) {
         }
     }
 });
-
+// Evento quando um jogador se desconecta (mas não sai da sala)
+socket.on('player-disconnected', function(data) {
+    console.log('📱 Jogador desconectado:', data.playerName);
+    
+    // Atualizar lista de jogadores mostrando status de conexão
+    updatePlayersListWithStatus(data.connectedPlayers);
+    
+    // Se owner desconectou, atualizar controles
+    if (data.ownerLeft) {
+        console.log('👑 Owner desconectou, atualizando controles');
+        updateGameControls(gameState);
+        showNotification(`📱 ${data.playerName} (owner) desconectou - qualquer um pode iniciar`, 'warning');
+    } else {
+        showNotification(`📱 ${data.playerName} desconectou`, 'info');
+    }
+});
 // Evento de reset do jogo
 socket.on('game-reset', function(data) {
     console.log('Jogo resetado:', data);
@@ -329,6 +344,42 @@ function updatePlayersList(players) {
         playerDiv.innerHTML = `
             <div class="player-name">${player.name} ${player.isOwner ? '👑' : ''}</div>
             <div class="player-score">Pontos: ${player.score}</div>
+        `;
+        
+        playersList.appendChild(playerDiv);
+    });
+}
+function updatePlayersListWithStatus(players) {
+    const playersList = document.getElementById('players-list');
+    playersList.innerHTML = '';
+    
+    players.forEach(player => {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-card';
+        
+        if (player.isOwner) {
+            playerDiv.classList.add('owner');
+        }
+        
+        // Adicionar indicador de desconexão se necessário
+        if (!player.connected) {
+            playerDiv.classList.add('disconnected');
+        }
+        
+        // Gerar avatar com primeira letra do nome
+        const avatarLetter = player.name.charAt(0).toUpperCase();
+        
+        const statusIcon = player.connected ? '🟢' : '🔴';
+        
+        playerDiv.innerHTML = `
+            <div class="player-avatar">${avatarLetter}</div>
+            <div class="player-info">
+                <div class="player-name">
+                    ${statusIcon} ${player.name} ${player.isOwner ? '👑' : ''}
+                    ${!player.connected ? '<span style="font-size:0.8em;color:#ef4444;">(desconectado)</span>' : ''}
+                </div>
+                <div class="player-score">Pontos: ${player.score}</div>
+            </div>
         `;
         
         playersList.appendChild(playerDiv);
@@ -936,6 +987,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
