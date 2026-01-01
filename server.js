@@ -893,8 +893,8 @@ io.engine.on("connection_error", (err) => {
 });
 
 // Configurar timeout de ping
-io.engine.pingTimeout = 5000; // 5 segundos
-io.engine.pingInterval = 3000; // 3 segundos
+io.engine.pingTimeout = 5000000; // 5 segundos
+io.engine.pingInterval = 3000000; // 3 segundos
 
 // Socket.io eventos - ÚNICO BLOCO
 io.on('connection', (socket) => {
@@ -1295,89 +1295,89 @@ if (playerId && playerCode) {
   socket.on('disconnect', () => {
     console.log('📱 Socket desconectado:', socket.id);
     
-    const roomCode = socket.roomCode;
-    const playerId = socket.playerId;
+    // const roomCode = socket.roomCode;
+    // const playerId = socket.playerId;
     
-    if (roomCode && playerId) {
-        const room = activeRooms.get(roomCode);
+    // if (roomCode && playerId) {
+    //     const room = activeRooms.get(roomCode);
         
-        if (room && room.players.has(playerId)) {
-            const player = room.players.get(playerId);
-            const wasOwner = player.isOwner;
+    //     if (room && room.players.has(playerId)) {
+    //         const player = room.players.get(playerId);
+    //         const wasOwner = player.isOwner;
             
-            // NÃO remover o jogador, apenas marcar como desconectado
-            room.markPlayerDisconnected(playerId);
+    //         // NÃO remover o jogador, apenas marcar como desconectado
+    //         room.markPlayerDisconnected(playerId);
             
-            // Fazer limpeza de jogadores muito antigos
-            room.cleanupDisconnectedPlayers();
+    //         // Fazer limpeza de jogadores muito antigos
+    //         room.cleanupDisconnectedPlayers();
             
-            console.log(`📱 ${player.name} desconectado mas mantido na sala ${roomCode}`);
+    //         console.log(`📱 ${player.name} desconectado mas mantido na sala ${roomCode}`);
             
-            // Se ainda tem jogadores conectados
-            const connectedPlayers = Array.from(room.players.values()).filter(p => p.connected);
+    //         // Se ainda tem jogadores conectados
+    //         const connectedPlayers = Array.from(room.players.values()).filter(p => p.connected);
             
-            if (connectedPlayers.length > 0) {
-                // Cancelar deleção da sala
-                room.cancelDelete();
+    //         if (connectedPlayers.length > 0) {
+    //             // Cancelar deleção da sala
+    //             room.cancelDelete();
                 
-                // Se era owner e saiu, remover ownership
-                if (wasOwner) {
-                    room.players.forEach(p => {
-                        p.isOwner = false;
-                    });
-                    room.owner = null;
-                    console.log(`👑 Owner desconectou, qualquer um pode iniciar agora`);
+    //             // Se era owner e saiu, remover ownership
+    //             if (wasOwner) {
+    //                 room.players.forEach(p => {
+    //                     p.isOwner = false;
+    //                 });
+    //                 room.owner = null;
+    //                 console.log(`👑 Owner desconectou, qualquer um pode iniciar agora`);
                     
-                    // Notificar jogadores conectados
-                    io.to(roomCode).emit('player-disconnected', {
-                        playerId: playerId,
-                        playerName: player.name,
-                        ownerLeft: true,
-                        connectedPlayers: connectedPlayers.map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            isOwner: p.isOwner,
-                            score: p.score,
-                            connected: p.connected
-                        }))
-                    });
-                } else {
-                    // Jogador normal desconectou
-                    io.to(roomCode).emit('player-disconnected', {
-                        playerId: playerId,
-                        playerName: player.name,
-                        ownerLeft: false,
-                        connectedPlayers: connectedPlayers.map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            isOwner: p.isOwner,
-                            score: p.score,
-                            connected: p.connected
-                        }))
-                    });
-                }
+    //                 // Notificar jogadores conectados
+    //                 io.to(roomCode).emit('player-disconnected', {
+    //                     playerId: playerId,
+    //                     playerName: player.name,
+    //                     ownerLeft: true,
+    //                     connectedPlayers: connectedPlayers.map(p => ({
+    //                         id: p.id,
+    //                         name: p.name,
+    //                         isOwner: p.isOwner,
+    //                         score: p.score,
+    //                         connected: p.connected
+    //                     }))
+    //                 });
+    //             } else {
+    //                 // Jogador normal desconectou
+    //                 io.to(roomCode).emit('player-disconnected', {
+    //                     playerId: playerId,
+    //                     playerName: player.name,
+    //                     ownerLeft: false,
+    //                     connectedPlayers: connectedPlayers.map(p => ({
+    //                         id: p.id,
+    //                         name: p.name,
+    //                         isOwner: p.isOwner,
+    //                         score: p.score,
+    //                         connected: p.connected
+    //                     }))
+    //                 });
+    //             }
                 
-                // Se estava jogando e ficaram poucos jogadores conectados
-                if (room.gameState === 'playing' && connectedPlayers.length < 3) {
-                    room.resetGame();
-                    io.to(roomCode).emit('game-cancelled', {
-                        message: 'Jogo cancelado - poucos jogadores conectados',
-                        players: connectedPlayers.map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            isOwner: p.isOwner,
-                            score: p.score
-                        })),
-                        gameState: 'waiting'
-                    });
-                }
-            } else {
-                // Nenhum jogador conectado - agendar deleção da sala
-                console.log(`Sala ${roomCode} sem jogadores conectados, agendando limpeza`);
-                room.scheduleDelete();
-            }
-        }
-    }
+    //             // Se estava jogando e ficaram poucos jogadores conectados
+    //             if (room.gameState === 'playing' && connectedPlayers.length < 3) {
+    //                 room.resetGame();
+    //                 io.to(roomCode).emit('game-cancelled', {
+    //                     message: 'Jogo cancelado - poucos jogadores conectados',
+    //                     players: connectedPlayers.map(p => ({
+    //                         id: p.id,
+    //                         name: p.name,
+    //                         isOwner: p.isOwner,
+    //                         score: p.score
+    //                     })),
+    //                     gameState: 'waiting'
+    //                 });
+    //             }
+    //         } else {
+    //             // Nenhum jogador conectado - agendar deleção da sala
+    //             console.log(`Sala ${roomCode} sem jogadores conectados, agendando limpeza`);
+    //             room.scheduleDelete();
+    //         }
+    //     }
+    // }
 });
 
 }); // <-- ESTA chave fecha o io.on('connection')
@@ -1386,6 +1386,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
