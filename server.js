@@ -433,7 +433,7 @@ class Room {
     );
     
     if (existingPlayerWithName) {
-      console.log(`Nome $${cleanName} já existe na sala (pertence a $${existingPlayerWithName.id})`);
+      console.log(`Nome ${cleanName} já existe na sala (pertence a ${existingPlayerWithName.id})`);
       return { error: 'Nome já existe na sala' };
     }
     
@@ -444,14 +444,56 @@ class Room {
       socketId,
       code: playerCode,
       isOwner: playerId === this.owner,
-      score: 0
+      score: 0,
+      connected: true, // ADICIONAR
+      disconnectedAt: null // ADICIONAR
     };
     
     this.players.set(playerId, playerData);
-    console.log(`Jogador $${cleanName} adicionado à sala $${this.code} com sucesso`);
+    console.log(`Jogador ${cleanName} adicionado à sala ${this.code} com sucesso`);
     console.log('Jogadores na sala agora:', Array.from(this.players.values()).map(p => p.name));
     return { success: true, playerCode };
   }
+
+  reconnectPlayer(playerId, playerCode, socketId) {
+    const player = this.players.get(playerId);
+    
+    if (player && player.code === playerCode) {
+        // Jogador válido, reconectar
+        player.socketId = socketId;
+        player.connected = true;
+        player.disconnectedAt = null;
+        console.log(`🔗 Jogador ${player.name} reconectou à sala ${this.code}`);
+        return { success: true, player };
+    }
+    
+    return { error: 'Jogador não encontrado ou código inválido' };
+}
+
+markPlayerDisconnected(playerId) {
+    const player = this.players.get(playerId);
+    if (player) {
+        player.connected = false;
+        player.disconnectedAt = Date.now();
+        player.socketId = null;
+        console.log(`📱 Jogador ${player.name} desconectado (mantido na sala)`);
+        return true;
+    }
+    return false;
+}
+
+cleanupDisconnectedPlayers() {
+    const now = Date.now();
+    const timeoutMs = 10 * 60 * 1000; // 10 minutos
+    
+    for (const [playerId, player] of this.players.entries()) {
+        if (!player.connected && player.disconnectedAt && (now - player.disconnectedAt) > timeoutMs) {
+            console.log(`🧹 Removendo jogador ${player.name} após 10 minutos desconectado`);
+            this.players.delete(playerId);
+            this.playerProfessions.delete(playerId);
+        }
+    }
+}
 
   removePlayer(playerId) {
     this.players.delete(playerId);
@@ -876,24 +918,25 @@ io.on('connection', (socket) => {
     let currentPlayerCode = playerCode;
 
     // Verificar se é reconexão NESTA SALA ESPECÍFICA
-    if (playerId && playerCode) {
-      const existingPlayer = Array.from(room.players.values()).find(
-        p => p.id === playerId && p.code === playerCode
-      );
-  
-      if (existingPlayer) {
-        // Jogador existe NESTA SALA - reconectar
-        existingPlayer.socketId = socket.id;
+    // Verificar se é reconexão NESTA SALA ESPECÍFICA
+if (playerId && playerCode) {
+    const reconnectResult = room.reconnectPlayer(playerId, playerCode, socket.id);
+    
+    if (reconnectResult.success) {
+        // Jogador reconectado com sucesso
         socket.join(roomCode);
         socket.playerId = playerId;
         socket.roomCode = roomCode;
-        console.log(`🔗 Reconexão: Socket $${socket.id} associado: playerId=$${playerId}, roomCode=${roomCode}`);
-        console.log(`Jogador $${playerName} reconectou à sala $${roomCode}`);
-      } else {
-        // Jogador NÃO existe NESTA SALA - LIMPAR cookies e criar novo
-        console.log(`Jogador $${playerName} não existe na sala $${roomCode}, limpando dados e criando novo`);
+        currentPlayerId = playerId;
+        currentPlayerCode = playerCode;
+        console.log(`🔗 Reconexão automática: ${playerName} na sala ${roomCode}`);
         
-        // Gerar novos IDs
+        // Limpar timeout de cleanup se existir
+        room.cancelDelete();
+    } else {
+        // Código/ID inválido, criar novo jogador
+        console.log(`❌ Dados inválidos para ${playerName}, criando novo jogador`);
+        
         const newPlayerId = uuidv4();
         const result = room.addPlayer(newPlayerId, playerName, socket.id);
         
@@ -902,13 +945,13 @@ io.on('connection', (socket) => {
           return;
         }
         
-        currentPlayerId = newPlayerId; // USAR O MESMO ID
+        currentPlayerId = newPlayerId;
         currentPlayerCode = result.playerCode;
         socket.join(roomCode);
         socket.playerId = currentPlayerId;
         socket.roomCode = roomCode;
-        console.log(`Novo jogador $${playerName} criado na sala $${roomCode} com ID ${currentPlayerId}`);
-      }
+        console.log(`Novo jogador ${playerName} criado na sala ${roomCode}`);
+    }
     } else {
       // Nova entrada sem dados salvos
       currentPlayerId = uuidv4();
@@ -1250,7 +1293,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('Usuário desconectado:', socket.id);
+    console.log('📱 Socket desconectado:', socket.id);
     
     const roomCode = socket.roomCode;
     const playerId = socket.playerId;
@@ -1258,63 +1301,80 @@ io.on('connection', (socket) => {
     if (roomCode && playerId) {
         const room = activeRooms.get(roomCode);
         
-        if (room) {
-            if (room.players.has(playerId)) {
-                const player = room.players.get(playerId);
-                const wasOwner = player.isOwner;
-                room.removePlayer(playerId);
+        if (room && room.players.has(playerId)) {
+            const player = room.players.get(playerId);
+            const wasOwner = player.isOwner;
+            
+            // NÃO remover o jogador, apenas marcar como desconectado
+            room.markPlayerDisconnected(playerId);
+            
+            // Fazer limpeza de jogadores muito antigos
+            room.cleanupDisconnectedPlayers();
+            
+            console.log(`📱 ${player.name} desconectado mas mantido na sala ${roomCode}`);
+            
+            // Se ainda tem jogadores conectados
+            const connectedPlayers = Array.from(room.players.values()).filter(p => p.connected);
+            
+            if (connectedPlayers.length > 0) {
+                // Cancelar deleção da sala
+                room.cancelDelete();
                 
-                // Se ainda tem jogadores na sala
-                if (room.players.size > 0) {
-                    // Cancelar deleção se estava agendada
-                    room.cancelDelete();
+                // Se era owner e saiu, remover ownership
+                if (wasOwner) {
+                    room.players.forEach(p => {
+                        p.isOwner = false;
+                    });
+                    room.owner = null;
+                    console.log(`👑 Owner desconectou, qualquer um pode iniciar agora`);
                     
-                    // NOVA LÓGICA: Se o dono saiu, remover ownership de todos
-                    if (wasOwner) {
-                        // Remover ownership de todos os jogadores
-                        room.players.forEach(p => {
-                            p.isOwner = false;
-                        });
-                        room.owner = null; // Não há mais owner
-                        console.log(`Owner saiu da sala ${roomCode}, agora qualquer um pode iniciar o jogo`);
-                    }
-                    
-                    // Notificar outros jogadores sobre a saída
-                    const updatedPlayers = Array.from(room.players.values()).map(p => ({
-                        id: p.id,
-                        name: p.name,
-                        isOwner: p.isOwner, // Todos serão false se owner saiu
-                        score: p.score
-                    }));
-                    
-                    io.to(roomCode).emit('player-left', {
+                    // Notificar jogadores conectados
+                    io.to(roomCode).emit('player-disconnected', {
                         playerId: playerId,
                         playerName: player.name,
-                        players: updatedPlayers,
-                        ownerLeft: wasOwner, // NOVA PROPRIEDADE
-                        newOwner: null // Não há novo owner
+                        ownerLeft: true,
+                        connectedPlayers: connectedPlayers.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            isOwner: p.isOwner,
+                            score: p.score,
+                            connected: p.connected
+                        }))
                     });
-                    
-                    // Se estava jogando e agora tem menos de 3 jogadores, cancelar jogo
-                    if (room.gameState === 'playing' && room.players.size < 3) {
-                        room.resetGame();
-                        room.players.forEach((p) => {
-                            const playerSocket = io.sockets.sockets.get(p.socketId);
-                            if (playerSocket) {
-                                playerSocket.emit('game-cancelled', {
-                                    message: 'Jogo cancelado - poucos jogadores',
-                                    players: updatedPlayers,
-                                    gameState: 'waiting'
-                                });
-                            }
-                        });
-                    }
-                    
                 } else {
-                    // Sala vazia - AGENDAR deleção em 30 segundos
-                    console.log(`Sala ${roomCode} ficou vazia, agendando deleção em 30 segundos`);
-                    room.scheduleDelete();
+                    // Jogador normal desconectou
+                    io.to(roomCode).emit('player-disconnected', {
+                        playerId: playerId,
+                        playerName: player.name,
+                        ownerLeft: false,
+                        connectedPlayers: connectedPlayers.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            isOwner: p.isOwner,
+                            score: p.score,
+                            connected: p.connected
+                        }))
+                    });
                 }
+                
+                // Se estava jogando e ficaram poucos jogadores conectados
+                if (room.gameState === 'playing' && connectedPlayers.length < 3) {
+                    room.resetGame();
+                    io.to(roomCode).emit('game-cancelled', {
+                        message: 'Jogo cancelado - poucos jogadores conectados',
+                        players: connectedPlayers.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            isOwner: p.isOwner,
+                            score: p.score
+                        })),
+                        gameState: 'waiting'
+                    });
+                }
+            } else {
+                // Nenhum jogador conectado - agendar deleção da sala
+                console.log(`Sala ${roomCode} sem jogadores conectados, agendando limpeza`);
+                room.scheduleDelete();
             }
         }
     }
@@ -1326,6 +1386,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
