@@ -470,30 +470,30 @@ class Room {
     return { error: 'Jogador não encontrado ou código inválido' };
 }
 
-markPlayerDisconnected(playerId) {
-    const player = this.players.get(playerId);
-    if (player) {
-        player.connected = false;
-        player.disconnectedAt = Date.now();
-        player.socketId = null;
-        console.log(`📱 Jogador ${player.name} desconectado (mantido na sala)`);
-        return true;
-    }
-    return false;
-}
+// markPlayerDisconnected(playerId) {
+//     const player = this.players.get(playerId);
+//     if (player) {
+//         player.connected = false;
+//         player.disconnectedAt = Date.now();
+//         player.socketId = null;
+//         console.log(`📱 Jogador ${player.name} desconectado (mantido na sala)`);
+//         return true;
+//     }
+//     return false;
+// }
 
-cleanupDisconnectedPlayers() {
-    const now = Date.now();
-    const timeoutMs = 10 * 60 * 1000; // 10 minutos
+// cleanupDisconnectedPlayers() {
+//     const now = Date.now();
+//     const timeoutMs = 10 * 60 * 1000; // 10 minutos
     
-    for (const [playerId, player] of this.players.entries()) {
-        if (!player.connected && player.disconnectedAt && (now - player.disconnectedAt) > timeoutMs) {
-            console.log(`🧹 Removendo jogador ${player.name} após 10 minutos desconectado`);
-            this.players.delete(playerId);
-            this.playerProfessions.delete(playerId);
-        }
-    }
-}
+//     for (const [playerId, player] of this.players.entries()) {
+//         if (!player.connected && player.disconnectedAt && (now - player.disconnectedAt) > timeoutMs) {
+//             console.log(`🧹 Removendo jogador ${player.name} após 10 minutos desconectado`);
+//             this.players.delete(playerId);
+//             this.playerProfessions.delete(playerId);
+//         }
+//     }
+// }
 
   removePlayer(playerId) {
     this.players.delete(playerId);
@@ -1386,6 +1386,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
