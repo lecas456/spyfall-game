@@ -12,7 +12,12 @@
         <div class="game-header">
             <div class="room-info">
                 <span>Sala: <strong id="room-code"></strong></span>
-                <span id="timer">⏱️ --:--</span>
+                <div class="timer-container">
+                    <span id="timer">⏱️ --:--</span>
+                </div>
+                <button class="exit-room-btn" onclick="exitRoom()" title="Sair da sala">
+                    🚪 Sair
+                </button>
             </div>
             
             <div class="game-info" id="game-info">
@@ -65,4 +70,5 @@
 
 </body>
 </html>
+
 
