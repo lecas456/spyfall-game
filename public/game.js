@@ -323,7 +323,18 @@ socket.on('room-deleted', function(data) {
 socket.on('voting-confirmation-started', function(data) {
     console.log('Confirmação de votação iniciada por:', data.initiator);
     votingConfirmationActive = true;
-    showVotingConfirmationModal(data.initiator, data.timeLimit);
+    
+    // GARANTIR que o jogo está no estado correto antes de mostrar modal
+    if (gameState === 'playing') {
+        console.log('✅ Dados do jogo já carregados, mostrando modal de confirmação');
+        showVotingConfirmationModal(data.initiator, data.timeLimit);
+    } else {
+        console.log('⏳ Aguardando dados do jogo antes de mostrar modal...');
+        // Aguardar um pouco e tentar novamente
+        setTimeout(() => {
+            showVotingConfirmationModal(data.initiator, data.timeLimit);
+        }, 200);
+    }
 });
 
 socket.on('voting-confirmation-update', function(data) {
@@ -1018,6 +1029,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
