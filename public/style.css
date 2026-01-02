@@ -1068,4 +1068,170 @@ button:disabled {
   }
 }
 
+/* Botão de regras */
+.rules-btn {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 0 2rem 0;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.rules-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
+}
+
+/* Modal de regras */
+.rules-modal-content {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.modal-header {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.close-rules-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.close-rules-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.rules-content {
+  padding: 30px;
+}
+
+.rule-section {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rule-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.rule-section h3 {
+  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-section ul, .rule-section ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.rule-section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.rule-section li strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.tips {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #0ea5e9;
+  border-bottom: 1px solid #0ea5e9;
+}
+
+.tips h3 {
+  color: #0c4a6e;
+}
+
+.rule-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  border: 2px dashed #94a3b8;
+}
+
+.rule-footer p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* Responsivo para modal de regras */
+@media (max-width: 768px) {
+  .rules-modal-content {
+    width: 95%;
+    max-width: 95%;
+    margin: 2% auto;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 15px 20px;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .rules-content {
+    padding: 20px;
+  }
+  
+  .rule-section {
+    margin-bottom: 20px;
+  }
+  
+  .rule-section h3 {
+    font-size: 1rem;
+  }
+  
+  .rules-btn {
+    font-size: 0.9rem;
+    padding: 10px 20px;
+  }
+}
+
 
