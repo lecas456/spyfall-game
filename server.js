@@ -444,9 +444,7 @@ class Room {
       socketId,
       code: playerCode,
       isOwner: playerId === this.owner,
-      score: 0,
-      connected: true, // ADICIONAR
-      disconnectedAt: null // ADICIONAR
+      score: 0
     };
     
     this.players.set(playerId, playerData);
@@ -461,8 +459,6 @@ class Room {
     if (player && player.code === playerCode) {
         // Jogador válido, reconectar
         player.socketId = socketId;
-        player.connected = true;
-        player.disconnectedAt = null;
         console.log(`🔗 Jogador ${player.name} reconectou à sala ${this.code}`);
         return { success: true, player };
     }
@@ -1386,6 +1382,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
