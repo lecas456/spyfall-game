@@ -8,8 +8,12 @@
 </head>
 <body>
     <div class="container">
-	    <h1>🕵️🏔️ Espião da Serra</h1>
+	    <h1>🕵️ Espião da Serra</h1>
 
+		<button class="rules-btn" onclick="openRulesModal()">
+        	📋 Como Jogar
+    	</button>
+		
 		<div class="card">
 	        <h2>🚪 Entrar em Sala</h2>
 	        <form id="join-room-form">
@@ -54,9 +58,72 @@
 	
 	</div>
 
+    <!-- Modal de Regras -->
+    <div id="rules-modal" class="modal" onclick="closeRulesModal()">
+        <div class="modal-content rules-modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📋 REGRAS DO ESPIÃO DA SERRA</h2>
+                <button onclick="closeRulesModal()" class="close-rules-btn">❌</button>
+            </div>
+            
+            <div class="rules-content">
+                <div class="rule-section">
+                    <h3>🎯 OBJETIVO</h3>
+                    <ul>
+                        <li><strong>Cidadãos:</strong> Descubram quem é o espião votando nele</li>
+                        <li><strong>Espião:</strong> Descubra qual é o local sem se entregar</li>
+                    </ul>
+                </div>
+
+                <div class="rule-section">
+                    <h3>🎮 COMO JOGAR</h3>
+                    <ol>
+                        <li>Cada jogador recebe um <strong>local secreto</strong> e uma <strong>profissão</strong></li>
+                        <li>O <strong>espião</strong> não sabe o local nem tem profissão</li>
+                        <li>Façam <strong>perguntas</strong> uns aos outros sobre o local</li>
+                        <li>O espião deve <strong>fingir</strong> que sabe onde está</li>
+                        <li>Use o botão <strong>"Ir para Votação"</strong> quando suspeitar de alguém</li>
+                        <li><strong>Maioria</strong> precisa concordar para iniciar a votação</li>
+                    </ol>
+                </div>
+
+                <div class="rule-section">
+                    <h3>🏆 COMO GANHAR</h3>
+                    <ul>
+                        <li><strong>Cidadãos vencem</strong> se votarem corretamente no espião</li>
+                        <li><strong>Espião vence</strong> se não for descoberto OU se adivinhar o local</li>
+                    </ul>
+                </div>
+
+                <div class="rule-section">
+                    <h3>⏰ TEMPO LIMITE</h3>
+                    <ul>
+                        <li>Vocês têm tempo limitado para jogar</li>
+                        <li>Se o tempo acabar, inicia votação automática</li>
+                        <li>Se votação não for finalizada em 2min, a sala fecha</li>
+                    </ul>
+                </div>
+
+                <div class="rule-section tips">
+                    <h3>💡 DICAS</h3>
+                    <ul>
+                        <li>Façam perguntas <strong>específicas</strong> mas não óbvias demais</li>
+                        <li><strong>Espiões:</strong> prestem atenção nas respostas para descobrir o local</li>
+                        <li><strong>Cidadãos:</strong> observem quem dá respostas vagas ou estranhas</li>
+                    </ul>
+                </div>
+
+                <div class="rule-footer">
+                    <p><strong>Boa sorte, detetives! 🕵️‍♂️</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
