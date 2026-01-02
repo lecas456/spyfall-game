@@ -985,30 +985,37 @@ if (playerId && playerCode) {
     });
     
     // Enviar informações específicas do jogo se estiver em andamento
+    // Enviar informações específicas do jogo se estiver em andamento
     if (room.gameState === 'playing') {
       const player = room.players.get(currentPlayerId);
+      
       if (player.id === room.spy) {
-       playerSocket.emit('game-started', { // ← Usar socket
+        console.log(`🕵️ Enviando dados completos do espião para ${player.name} na reconexão`);
+        socket.emit('game-started', {
             isSpy: true,
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
             firstQuestionPlayer: room.firstQuestionPlayer,
             playerOrder: room.playerOrder,
             timeRemaining: room.timeRemaining,
-            hasProfessions: room.hasProfessions
+            hasProfessions: room.hasProfessions,
+            location: undefined, // Espião não deve saber o local
+            profession: undefined // Espião não tem profissão
         });
-    } else {
-        console.log(`📤 Enviando dados para ${player.name} (não-espião):`);
+      } else {
+        console.log(`👤 Enviando dados completos para ${player.name} na reconexão:`);
         console.log(`   - Local: ${room.location}`);
         console.log(`   - Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
         console.log(`   - hasProfessions: ${room.hasProfessions}`);
+        console.log(`   - locationImage: ${room.locationImage}`);
+        console.log(`   - professionImage: ${room.playerProfessionImages.get(player.id)}`);
         
-       playerSocket.emit('game-started', { 
+        socket.emit('game-started', {
             isSpy: false,
             location: room.location,
             profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
-            locationImage: null, // Será carregado depois
-            professionImage: null, // Será carregado depois
+            locationImage: room.locationImage, // CORREÇÃO: Enviar imagem se já carregada
+            professionImage: room.hasProfessions ? room.playerProfessionImages.get(player.id) : null, // CORREÇÃO
             locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
             currentPlayer: room.currentPlayer,
             firstQuestionPlayer: room.firstQuestionPlayer,
@@ -1016,6 +1023,7 @@ if (playerId && playerCode) {
             timeRemaining: room.timeRemaining,
             hasProfessions: room.hasProfessions
         });
+      }
     }
     } else if (room.gameState === 'voting') {
       // Se estiver em votação, mostrar modal de votação
@@ -1382,6 +1390,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
