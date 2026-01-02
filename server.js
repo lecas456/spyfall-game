@@ -658,8 +658,27 @@ async loadImagesFromSupabase() {
     this.votes.clear();
     
     console.log(`🗳️ Votação iniciada na sala ${this.code}`);
-    return true; // ADICIONAR RETORNO
-  }
+    
+    // NOVO: Timeout de 2 minutos para votação
+    this.votingTimeout = setTimeout(() => {
+        console.log(`⏰ Timeout de votação na sala ${this.code} - fechando sala`);
+        
+        // Notificar todos os jogadores
+        const io = global.io;
+        if (io) {
+            io.to(this.code).emit('room-closed', {
+                message: 'Sala fechada - votação não foi finalizada em 2 minutos'
+            });
+        }
+        
+        // Deletar sala
+        activeRooms.delete(this.code);
+        console.log(`🗑️ Sala ${this.code} deletada por timeout de votação`);
+        
+    }, 120000); // 2 minutos = 120000ms
+    
+    return true;
+}
 
   vote(playerId, votedFor) {
     this.votes.set(playerId, votedFor);
@@ -775,6 +794,13 @@ async loadImagesFromSupabase() {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
+    }
+    
+    // NOVO: Limpar timeout de votação
+    if (this.votingTimeout) {
+        clearTimeout(this.votingTimeout);
+        this.votingTimeout = null;
+        console.log('⏰ Timeout de votação cancelado - jogo finalizado');
     }
 
     let gameResult = result;
@@ -1140,6 +1166,72 @@ if (playerId && playerCode) {
     }
 });
 
+socket.on('exit-room', () => {
+    console.log('🚪 Jogador solicitou saída da sala:', socket.playerId);
+    
+    const roomCode = socket.roomCode;
+    const playerId = socket.playerId;
+    
+    if (roomCode && playerId) {
+        const room = activeRooms.get(roomCode);
+        
+        if (room && room.players.has(playerId)) {
+            const player = room.players.get(playerId);
+            const wasOwner = player.isOwner;
+            
+            console.log(`👋 ${player.name} saindo voluntariamente da sala ${roomCode}`);
+            
+            // REALMENTE remover o jogador
+            room.removePlayer(playerId);
+            
+            // Se ainda tem jogadores na sala
+            if (room.players.size > 0) {
+                // Se era owner e saiu, remover ownership de todos
+                if (wasOwner) {
+                    room.players.forEach(p => {
+                        p.isOwner = false;
+                    });
+                    room.owner = null;
+                    console.log(`👑 Owner saiu voluntariamente, qualquer um pode iniciar agora`);
+                }
+                
+                // Notificar outros jogadores
+                const updatedPlayers = Array.from(room.players.values()).map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    isOwner: p.isOwner,
+                    score: p.score
+                }));
+                
+                io.to(roomCode).emit('player-left', {
+                    playerId: playerId,
+                    playerName: player.name,
+                    players: updatedPlayers,
+                    ownerLeft: wasOwner,
+                    newOwner: null
+                });
+                
+                // Se estava jogando e ficaram poucos jogadores
+                if (room.gameState === 'playing' && room.players.size < 3) {
+                    room.resetGame();
+                    io.to(roomCode).emit('game-cancelled', {
+                        message: 'Jogo cancelado - poucos jogadores',
+                        players: updatedPlayers,
+                        gameState: 'waiting'
+                    });
+                }
+            } else {
+                // Sala vazia - deletar imediatamente
+                console.log(`Sala ${roomCode} ficou vazia após saída voluntária`);
+                activeRooms.delete(roomCode);
+            }
+        }
+    }
+    
+    // Desconectar o socket
+    socket.disconnect();
+});
+  
   socket.on('start-voting', () => {
     console.log('Recebido start-voting de:', socket.playerId);
     const roomCode = socket.roomCode;
@@ -1389,6 +1481,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
