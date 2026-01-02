@@ -610,25 +610,31 @@ async loadImagesFromSupabase() {
   }
 
   scheduleInactivityDelete() {
+    // Não agendar se já estiver jogando
+    if (this.gameState !== 'waiting') {
+        return;
+    }
+    
     // Agendar deleção em 2 minutos se jogo não for iniciado
     this.inactivityTimeout = setTimeout(() => {
-      console.log(`Sala ${this.code} deletada por inatividade - não foi iniciada em 2 minutos`);
+      console.log(`⏰ Sala ${this.code} deletada por inatividade - 2 minutos sem iniciar`);
       activeRooms.delete(this.code);
-      console.log('Salas ativas restantes:', activeRooms.size);
+      console.log(`🗑️ Salas ativas restantes: ${activeRooms.size}`);
       
       // Notificar jogadores na sala
       this.players.forEach((player) => {
         const playerSocket = io.sockets.sockets.get(player.socketId);
         if (playerSocket) {
           playerSocket.emit('room-deleted', {
-            message: 'Sala foi fechada por inatividade (2 minutos sem iniciar)'
+            message: 'Sala foi fechada por inatividade (2 minutos sem iniciar o jogo)'
           });
         }
       });
     }, 120000); // 2 minutos = 120000ms
     
-    console.log(`Sala ${this.code} será deletada em 2 minutos se não for iniciada`);
-  }
+    const currentTime = new Date().toLocaleTimeString();
+    console.log(`⏰ [${currentTime}] Sala ${this.code} - timeout de inatividade agendado (2 min)`);
+}
   
   cancelInactivityDelete() {
     if (this.inactivityTimeout) {
@@ -638,6 +644,21 @@ async loadImagesFromSupabase() {
     }
   }
   
+  // NOVA FUNÇÃO:
+  resetInactivityTimeout() {
+      // Cancelar timeout atual se existir
+      if (this.inactivityTimeout) {
+          clearTimeout(this.inactivityTimeout);
+          this.inactivityTimeout = null;
+          console.log(`⏰ Timeout de inatividade da sala ${this.code} cancelado - novo jogador entrou`);
+      }
+      
+      // Só reagendar se não estiver jogando
+      if (this.gameState === 'waiting') {
+          this.scheduleInactivityDelete();
+          console.log(`🔄 Timeout de inatividade da sala ${this.code} resetado - 2 minutos renovados`);
+      }
+  }
   startTimer() {
     this.timer = setInterval(() => {
       this.timeRemaining--;
@@ -993,6 +1014,7 @@ if (playerId && playerCode) {
     
     // Cancelar deleção se estava agendada
     room.cancelDelete();
+    room.resetInactivityTimeout();
     
     socket.emit('joined-room', {
       roomCode,
@@ -1481,6 +1503,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
