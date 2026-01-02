@@ -421,6 +421,8 @@ class Room {
     this.hasProfessions = true; // ADICIONAR ESTA LINHA
     this.votingConfirmation = new Map(); // ADICIONAR - para confirmação de votação
     this.votingConfirmationTimer = null; // ADICIONAR
+    this.votingConfirmationInitiator = null;
+    this.votingConfirmationStartTime = null;
   }
 
   addPlayer(playerId, name, socketId) {
@@ -716,6 +718,11 @@ async loadImagesFromSupabase() {
     this.votingConfirmation.clear();
     
     const initiator = this.players.get(initiatorId);
+    
+    // NOVO: Guardar informações para jogadores que entrarem depois
+    this.votingConfirmationInitiator = initiator.name;
+    this.votingConfirmationStartTime = Date.now();
+    
     console.log(`🗳️ ${initiator.name} iniciou votação, aguardando confirmação dos outros jogadores`);
     
     // CORREÇÃO: Timer de 10 segundos com callback adequado
@@ -772,18 +779,23 @@ async loadImagesFromSupabase() {
     if (yesVotes > totalPlayers / 2) {
         // Maioria disse sim - iniciar votação
         console.log('✅ Votação aprovada, iniciando votação real');
+        this.votingConfirmationInitiator = null;
+        this.votingConfirmationStartTime = null;
         this.startVoting();
         return { result: 'approved', yesVotes, noVotes };
     } else {
-        // Maioria disse não ou não respondeu - voltar ao jogo
-        console.log('❌ Votação rejeitada, voltando ao jogo');
-        this.gameState = 'playing';
-        
-        // NÃO reiniciar timer aqui - o timer principal já cuida disso
-        console.log(`🔄 Voltando ao estado 'playing' - ${this.timeRemaining}s restantes`);
-        
-        return { result: 'rejected', yesVotes, noVotes };
-    }
+      // Maioria disse não ou não respondeu - voltar ao jogo
+      console.log('❌ Votação rejeitada, voltando ao jogo');
+      this.gameState = 'playing';
+      
+      // NOVO: Limpar dados de confirmação
+      this.votingConfirmationInitiator = null;
+      this.votingConfirmationStartTime = null;
+      
+      console.log(`🔄 Voltando ao estado 'playing' - ${this.timeRemaining}s restantes`);
+      
+      return { result: 'rejected', yesVotes, noVotes };
+  }
 }
   
   voteConfirmation(playerId, vote) {
@@ -1071,6 +1083,21 @@ if (playerId && playerCode) {
             timeRemaining: room.timeRemaining,
             hasProfessions: room.hasProfessions
         });
+      }
+    } else if (room.gameState === 'voting_confirmation') {
+      // NOVO: Se estiver em confirmação de votação, mostrar modal de confirmação
+      const timeElapsed = Date.now() - room.votingConfirmationStartTime;
+      const timeRemaining = Math.max(0, Math.floor((10000 - timeElapsed) / 1000)); // 10 segundos total
+      
+      console.log(`🔄 Jogador ${playerName} entrou durante confirmação - tempo restante: ${timeRemaining}s`);
+      
+      if (timeRemaining > 0) {
+        socket.emit('voting-confirmation-started', {
+          initiator: room.votingConfirmationInitiator,
+          timeLimit: timeRemaining
+        });
+      } else {
+        console.log('⏰ Confirmação já expirou, aguardando resultado...');
       }
     } else if (room.gameState === 'voting') {
       // Se estiver em votação, mostrar modal de votação
@@ -1503,6 +1530,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
