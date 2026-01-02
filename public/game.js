@@ -58,6 +58,25 @@ function joinRoom(roomCode, playerName, playerId = null, playerCode = null) {
     });
 }
 
+function exitRoom() {
+    const confirmExit = confirm('🚪 Tem certeza que deseja sair da sala?');
+    
+    if (confirmExit) {
+        console.log('👋 Saindo da sala...');
+        
+        // Emitir evento para realmente sair da sala
+        socket.emit('exit-room');
+        
+        // Limpar dados locais
+        setCookie('playerId', '', -1);
+        setCookie('playerCode', '', -1);
+        setCookie('playerName', '', -1);
+        
+        // Redirecionar para tela inicial
+        window.location.href = '/';
+    }
+}
+
 // Eventos do Socket
 socket.on('joined-room', function(data) {
     console.log('Entrou na sala:', data);
@@ -977,6 +996,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
