@@ -539,10 +539,18 @@ function updateSpyLocationsVisual() {
 }
 
 function showVotingConfirmationModal(initiator, timeLimit) {
+    // Fechar modal anterior se existir
+    const existingModal = document.getElementById('voting-confirmation-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
     const modal = document.createElement('div');
     modal.id = 'voting-confirmation-modal';
     modal.className = 'modal';
     modal.style.display = 'block';
+    
+    const effectiveTimeLimit = Math.max(1, timeLimit); // Garantir pelo menos 1 segundo
     
     modal.innerHTML = `
         <div class="modal-content voting-confirmation-content">
@@ -552,7 +560,7 @@ function showVotingConfirmationModal(initiator, timeLimit) {
             
             <div class="voting-confirmation-timer">
                 <div class="timer-circle">
-                    <span id="confirmation-timer">${timeLimit}</span>
+                    <span id="confirmation-timer">${effectiveTimeLimit}</span>
                 </div>
             </div>
             
@@ -574,7 +582,7 @@ function showVotingConfirmationModal(initiator, timeLimit) {
     document.body.appendChild(modal);
     
     // Timer countdown
-    let remaining = timeLimit;
+    let remaining = effectiveTimeLimit;
     let userVoted = false; // ADICIONAR controle se usuário já votou
     
     const timerElement = document.getElementById('confirmation-timer');
@@ -1010,6 +1018,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
