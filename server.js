@@ -1085,17 +1085,56 @@ if (playerId && playerCode) {
         });
       }
     } else if (room.gameState === 'voting_confirmation') {
-      // NOVO: Se estiver em confirmação de votação, mostrar modal de confirmação
-      const timeElapsed = Date.now() - room.votingConfirmationStartTime;
-      const timeRemaining = Math.max(0, Math.floor((10000 - timeElapsed) / 1000)); // 10 segundos total
+      // NOVO: Se estiver em confirmação de votação
+      const player = room.players.get(currentPlayerId);
       
-      console.log(`🔄 Jogador ${playerName} entrou durante confirmação - tempo restante: ${timeRemaining}s`);
+      // PRIMEIRO: Enviar dados completos do jogo (igual ao 'playing')
+      if (player.id === room.spy) {
+        console.log(`🕵️ Enviando dados completos do espião para ${player.name} durante confirmação`);
+        socket.emit('game-started', {
+            isSpy: true,
+            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+            currentPlayer: room.currentPlayer,
+            firstQuestionPlayer: room.firstQuestionPlayer,
+            playerOrder: room.playerOrder,
+            timeRemaining: room.timeRemaining,
+            hasProfessions: room.hasProfessions,
+            location: undefined,
+            profession: undefined
+        });
+      } else {
+        console.log(`👤 Enviando dados completos para ${player.name} durante confirmação:`);
+        console.log(`   - Local: ${room.location}, Profissão: ${room.hasProfessions ? room.playerProfessions.get(player.id) : 'Nenhuma'}`);
+        
+        socket.emit('game-started', {
+            isSpy: false,
+            location: room.location,
+            profession: room.hasProfessions ? room.playerProfessions.get(player.id) : null,
+            locationImage: room.locationImage,
+            professionImage: room.hasProfessions ? room.playerProfessionImages.get(player.id) : null,
+            locations: Object.keys(locationsWithProfessions).slice(0, room.locationsCount),
+            currentPlayer: room.currentPlayer,
+            firstQuestionPlayer: room.firstQuestionPlayer,
+            playerOrder: room.playerOrder,
+            timeRemaining: room.timeRemaining,
+            hasProfessions: room.hasProfessions
+        });
+      }
+      
+      // SEGUNDO: Depois enviar o modal de confirmação
+      const timeElapsed = Date.now() - room.votingConfirmationStartTime;
+      const timeRemaining = Math.max(0, Math.floor((10000 - timeElapsed) / 1000));
+      
+      console.log(`🔄 Jogador ${player.name} entrou durante confirmação - tempo restante: ${timeRemaining}s`);
       
       if (timeRemaining > 0) {
-        socket.emit('voting-confirmation-started', {
-          initiator: room.votingConfirmationInitiator,
-          timeLimit: timeRemaining
-        });
+        // Pequeno delay para garantir que o game-started seja processado primeiro
+        setTimeout(() => {
+          socket.emit('voting-confirmation-started', {
+            initiator: room.votingConfirmationInitiator,
+            timeLimit: timeRemaining
+          });
+        }, 100);
       } else {
         console.log('⏰ Confirmação já expirou, aguardando resultado...');
       }
@@ -1530,6 +1569,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
