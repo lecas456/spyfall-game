@@ -1020,5 +1020,52 @@ button:disabled {
   }
 }
 
+/* Botão de sair da sala */
+.exit-room-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.exit-room-btn:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.exit-room-btn:active {
+  transform: translateY(0);
+}
+
+/* Ajustar layout do room-info para 3 colunas */
+.room-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .room-info {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .exit-room-btn {
+    order: 3;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}
 
 
