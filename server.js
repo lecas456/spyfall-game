@@ -1024,7 +1024,6 @@ if (playerId && playerCode) {
             hasProfessions: room.hasProfessions
         });
       }
-    }
     } else if (room.gameState === 'voting') {
       // Se estiver em votação, mostrar modal de votação
       socket.emit('voting-started', {
@@ -1390,6 +1389,7 @@ const PORT = process.env.PORT || 7842;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
