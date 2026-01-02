@@ -179,6 +179,20 @@ socket.on('spy-guessing', function(data) {
     }
 });
 
+// Evento quando sala é fechada por timeout
+socket.on('room-closed', function(data) {
+    console.log('🚪 Sala foi fechada:', data.message);
+    alert(data.message);
+    
+    // Limpar dados locais
+    setCookie('playerId', '', -1);
+    setCookie('playerCode', '', -1);
+    setCookie('playerName', '', -1);
+    
+    // Redirecionar para página inicial
+    window.location.href = '/';
+});
+
 socket.on('error', function(data) {
     console.error('Erro do servidor:', data);
     
@@ -996,6 +1010,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
