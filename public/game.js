@@ -75,11 +75,17 @@ socket.on('joined-room', function(data) {
     updatePlayersList(data.players);
     updateGameControls(data.gameState);
     
-    // Configurar interface inicial
+    // ADICIONAR ESTA SEÇÃO NOVA:
+    // Configurar interface baseada no estado do jogo
     if (data.gameState === 'waiting') {
         document.getElementById('game-info').innerHTML = '<p>🎮 Aguardando início do jogo...</p>';
         document.getElementById('notes-area').innerHTML = '<p>📝 As anotações aparecerão quando o jogo começar.</p>';
+    } else if (data.gameState === 'playing') {
+        console.log('🔄 Reconectando em jogo em andamento, aguardando dados completos...');
+        document.getElementById('game-info').innerHTML = '<p>🔄 Carregando informações do jogo...</p>';
+        document.getElementById('notes-area').innerHTML = '<p>📝 Carregando anotações...</p>';
     }
+    // FIM DA SEÇÃO NOVA
     
     if (data.timeRemaining > 0) {
         updateTimer(data.timeRemaining);
@@ -103,10 +109,20 @@ socket.on('game-started', function(data) {
     gameState = 'playing';
     updateGameInfo(data);
     updateTimer(data.timeRemaining);
-    updateGameControls('playing'); // <- ESTA LINHA É IMPORTANTE
+    updateGameControls('playing');
     
-    // Criar área de anotações
-    createNotesArea(currentRoom.players || []);
+    // CORREÇÃO: Sempre criar área de anotações com dados atualizados
+    console.log('🗒️ Criando área de anotações para reconexão');
+    if (currentRoom && currentRoom.players) {
+        createNotesArea(currentRoom.players);
+    } else {
+        console.log('⚠️ currentRoom.players não disponível, tentando novamente...');
+        setTimeout(() => {
+            if (currentRoom && currentRoom.players) {
+                createNotesArea(currentRoom.players);
+            }
+        }, 500);
+    }
 });
 
 socket.on('timer-update', function(data) {
@@ -671,6 +687,14 @@ function updateTimer(timeRemaining) {
 
 function createNotesArea(players) {
     const notesArea = document.getElementById('notes-area');
+    
+    if (!players || players.length === 0) {
+        console.log('⚠️ Nenhum jogador fornecido para criar anotações');
+        notesArea.innerHTML = '<p>📝 Aguardando lista de jogadores...</p>';
+        return;
+    }
+    
+    console.log('🗒️ Criando anotações para:', players.map(p => p.name));
     notesArea.innerHTML = '';
     
     players.forEach(player => {
@@ -684,6 +708,8 @@ function createNotesArea(players) {
             notesArea.appendChild(noteDiv);
         }
     });
+    
+    console.log('✅ Anotações criadas com sucesso');
 }
 
 function startGame() {
@@ -951,6 +977,7 @@ function getCookie(name) {
     }
     return null;
 }
+
 
 
 
